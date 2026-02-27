@@ -1,0 +1,2 @@
+This file tells t91_tracker.exe to skip camera initialization.
+Delete this file when physical cameras are connected.

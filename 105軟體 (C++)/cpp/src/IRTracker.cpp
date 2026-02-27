@@ -4,7 +4,9 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <fstream>
+#include <windows.h>
 
 namespace T91 {
 
@@ -110,41 +112,55 @@ bool IRTracker::initialize() {
   // 同時載入到 impl（向後兼容，未來可移除）
   impl_->loadCalibration("calibration_a.json", "calibration_b.json");
 
-  // 先統一初始化 Pylon 並等待 GigE 網路掃描完成
-  std::cout << "[INFO] Initializing Pylon SDK and waiting for GigE device "
-               "discovery..."
-            << std::endl;
-  if (PylonInitialize() != GENAPI_E_OK) {
-    std::cerr << "[ERROR] PylonInitialize failed" << std::endl;
-    return false;
+  // 檢查是否跳過相機初始化：
+  //   1. 環境變數 T91_NO_CAMERA=1
+  //   2. 工作目錄下存在 no_camera.flag 檔案
+  bool skip_camera = false;
+  const char* no_cam_env = std::getenv("T91_NO_CAMERA");
+  if (no_cam_env && std::string(no_cam_env) == "1") {
+    skip_camera = true;
+    std::cout << "[INFO] T91_NO_CAMERA=1 set. Skipping camera init." << std::endl;
+  }
+  {
+    std::ifstream flag_file("no_camera.flag");
+    if (flag_file.good()) {
+      skip_camera = true;
+      std::cout << "[INFO] no_camera.flag found. Skipping camera init." << std::endl;
+    }
   }
 
-  // GigE 相機可能需要時間進行網路掃描，等待 2 秒
-  std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+  bool a_ok = false, b_ok = false;
 
-  // 先列舉所有設備確認都偵測到
-  size_t numDevices = 0;
-  PylonEnumerateDevices(&numDevices);
-  std::cout << "[INFO] Found " << numDevices
-            << " Basler device(s) after initial scan." << std::endl;
+  if (!skip_camera) {
+    std::cout << "[INFO] Initializing Pylon SDK..." << std::endl;
+    if (PylonInitialize() != GENAPI_E_OK) {
+      std::cerr << "[WARNING] PylonInitialize failed. Running without cameras." << std::endl;
+    } else {
+      std::this_thread::sleep_for(std::chrono::milliseconds(2000));
 
-  bool a_ok = impl_->cam_a->open();
-  if (!a_ok)
-    std::cerr << "[WARNING] Camera A failed to open" << std::endl;
-  else
-    std::cout << "[INFO] Camera A initialized." << std::endl;
+      size_t numDevices = 0;
+      PylonEnumerateDevices(&numDevices);
+      std::cout << "[INFO] Found " << numDevices
+                << " Basler device(s) after initial scan." << std::endl;
 
-  bool b_ok = impl_->cam_b->open();
-  if (!b_ok)
-    std::cerr << "[WARNING] Camera B failed to open" << std::endl;
-  else
-    std::cout << "[INFO] Camera B initialized." << std::endl;
+      a_ok = impl_->cam_a->open();
+      if (!a_ok)
+        std::cerr << "[WARNING] Camera A failed to open" << std::endl;
+      else
+        std::cout << "[INFO] Camera A initialized." << std::endl;
+
+      b_ok = impl_->cam_b->open();
+      if (!b_ok)
+        std::cerr << "[WARNING] Camera B failed to open" << std::endl;
+      else
+        std::cout << "[INFO] Camera B initialized." << std::endl;
+    }
+  }
 
   if (!a_ok && !b_ok) {
     std::cerr
-        << "[WARNING] No cameras detected. Running in NO-CAMERA mode (HTTP API only)."
+        << "[WARNING] No cameras. Running in NO-CAMERA mode (HTTP API only)."
         << std::endl;
-    // 不再 return false，允許系統在無相機狀態下啟動（前端測試/遠端開發用）
   } else {
     std::cout << "[INFO] Tracker initialized successfully with "
               << (a_ok ? "Camera A " : "") << (b_ok ? "Camera B" : "")
