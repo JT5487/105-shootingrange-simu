@@ -1366,6 +1366,8 @@
                             >
                                 🎯 自動校準 B
                             </button>
+                            <span id="calib-progress" style="color: #f1c40f; font-size: 12px; margin-left: 8px;"></span>
+                            <span id="calib-quality" style="font-size: 12px; margin-left: 8px;">未校準</span>
                             <button
                                 class="btn btn-primary"
                                 style="padding: 10px"
@@ -2623,6 +2625,29 @@
                                     }
                                 }
                             }
+                            // 顯示校準品質（重投影誤差）
+                            if (s.calibrationStatus) {
+                                const cs = s.calibrationStatus;
+                                const qualityEl = document.getElementById("calib-quality");
+                                if (qualityEl) {
+                                    let txt = "";
+                                    if (cs.reprojErrorA >= 0) {
+                                        const q = cs.reprojErrorA < 0.02 ? "優" : cs.reprojErrorA < 0.05 ? "良" : "差";
+                                        txt += `A: ${cs.reprojErrorA.toFixed(4)} (${q}) `;
+                                    }
+                                    if (cs.reprojErrorB >= 0) {
+                                        const q = cs.reprojErrorB < 0.02 ? "優" : cs.reprojErrorB < 0.05 ? "良" : "差";
+                                        txt += `B: ${cs.reprojErrorB.toFixed(4)} (${q})`;
+                                    }
+                                    qualityEl.textContent = txt || "未校準";
+                                    qualityEl.style.color = (cs.reprojErrorA > 0.05 || cs.reprojErrorB > 0.05) ? "#e74c3c" : "#2ecc71";
+                                }
+                                if (cs.isCalibrating) {
+                                    const progEl = document.getElementById("calib-progress");
+                                    if (progEl) progEl.textContent = `校準中: A=${cs.countA}/4  B=${cs.countB}/4`;
+                                }
+                            }
+
                             updateConnectionStatus("cameraA", true);
                             updateConnectionStatus("cameraB", true);
                         }

@@ -185,7 +185,9 @@ private:
   std::vector<cv::Point2f> calib_points_a_, calib_points_b_;
   std::vector<cv::Point2f> avg_buffer_a_,
       avg_buffer_b_;  // 新增：用於平均校正點的緩衝區
-  int avg_limit_ = 5; // 新增：平均 5 幀以提升精度
+  int avg_limit_ = 15; // 平均 15 幀以提升精度（原 5 幀不足以消除手持抖動）
+  double calib_reproj_error_a_ = -1.0; // 校準重投影誤差（-1 表示未計算）
+  double calib_reproj_error_b_ = -1.0;
   
   // 校準目標座標：修正為 (5%, 95%) 實際位置，避免 10% 邊緣偏差
   // 物理尺寸: Camera A: 390×225cm @ 430cm, Camera B: 402×225cm @ 440cm

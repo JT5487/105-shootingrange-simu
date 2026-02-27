@@ -3,6 +3,7 @@
 #include "Detector.hpp"
 #include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <fstream>
 
 namespace T91 {
@@ -335,7 +336,9 @@ json IRTracker::getState() {
           {"calibrationStatus",
            {{"countA", count_a},
             {"countB", count_b},
-            {"isCalibrating", is_calibrating_.load()}}}};
+            {"isCalibrating", is_calibrating_.load()},
+            {"reprojErrorA", calib_reproj_error_a_},
+            {"reprojErrorB", calib_reproj_error_b_}}}};
 }
 
 void IRTracker::setShooterZeroing(int id, double x, double y) {
@@ -525,12 +528,36 @@ void IRTracker::processingLoop() {
             if (calib_points_a_.size() < 4) {
               avg_buffer_a_.push_back(cv::Point2f((float)p.x, (float)p.y));
 
-              // 當集滿 avg_limit_ 幀時，取平均並儲存為正式校正點
+              // 當集滿 avg_limit_ 幀時，過濾離群值後取平均
               if (avg_buffer_a_.size() >= static_cast<size_t>(avg_limit_)) {
+                // 1. 計算平均值
                 cv::Point2f sum(0, 0);
                 for (const auto &pt : avg_buffer_a_)
                   sum += pt;
-                cv::Point2f avg = sum * (1.0f / (float)avg_buffer_a_.size());
+                cv::Point2f mean = sum * (1.0f / (float)avg_buffer_a_.size());
+
+                // 2. 計算標準差
+                float sum_sq_x = 0, sum_sq_y = 0;
+                for (const auto &pt : avg_buffer_a_) {
+                  sum_sq_x += (pt.x - mean.x) * (pt.x - mean.x);
+                  sum_sq_y += (pt.y - mean.y) * (pt.y - mean.y);
+                }
+                float std_x = std::sqrt(sum_sq_x / (float)avg_buffer_a_.size());
+                float std_y = std::sqrt(sum_sq_y / (float)avg_buffer_a_.size());
+
+                // 3. 過濾超過 1.5 倍標準差的離群值後重新平均
+                cv::Point2f filtered_sum(0, 0);
+                int filtered_count = 0;
+                for (const auto &pt : avg_buffer_a_) {
+                  if (std::abs(pt.x - mean.x) <= 1.5f * std_x + 0.1f &&
+                      std::abs(pt.y - mean.y) <= 1.5f * std_y + 0.1f) {
+                    filtered_sum += pt;
+                    filtered_count++;
+                  }
+                }
+                cv::Point2f avg = (filtered_count > 0)
+                    ? filtered_sum * (1.0f / (float)filtered_count)
+                    : mean;
 
                 calib_points_a_.push_back(avg);
                 avg_buffer_a_.clear();
@@ -538,7 +565,9 @@ void IRTracker::processingLoop() {
 
                 int current_idx = (int)calib_points_a_.size() - 1;
                 std::cout << "[CALIB] Camera A point " << (current_idx + 1)
-                          << "/4 Averaged: (" << avg.x << ", " << avg.y << ")"
+                          << "/4 Averaged: (" << avg.x << ", " << avg.y 
+                          << ") std=(" << std_x << "," << std_y 
+                          << ") used " << filtered_count << "/" << avg_limit_ << " samples"
                           << std::endl;
 
                 // 回傳一個點給前端顯示（用於視覺確認）
@@ -551,7 +580,7 @@ void IRTracker::processingLoop() {
                   latest_shots_.push_back(
                       {0, dst_points_[current_idx].x,
                        dst_points_[current_idx].y, ms, ++shot_seq_, 'A',
-                       0}); // 0 for calibration intensity for now
+                       0});
                 }
 
                 if (calib_points_a_.size() == 4) {
@@ -560,6 +589,19 @@ void IRTracker::processingLoop() {
                   impl_->calibrated_a = true;
                   impl_->saveCalibration("calibration_a.json",
                                          impl_->homography_a);
+
+                  // 計算重投影誤差
+                  std::vector<cv::Point2f> reproj;
+                  cv::perspectiveTransform(calib_points_a_, reproj, impl_->homography_a);
+                  double total_err = 0;
+                  for (size_t i = 0; i < 4; i++) {
+                    double dx = reproj[i].x - dst_points_[i].x;
+                    double dy = reproj[i].y - dst_points_[i].y;
+                    total_err += std::sqrt(dx*dx + dy*dy);
+                  }
+                  calib_reproj_error_a_ = total_err / 4.0;
+                  std::cout << "[CALIB] Camera A reprojection error: " 
+                            << calib_reproj_error_a_ << std::endl;
                 }
               }
             }
@@ -710,10 +752,34 @@ void IRTracker::processingLoop() {
               avg_buffer_b_.push_back(cv::Point2f((float)p.x, (float)p.y));
 
               if (avg_buffer_b_.size() >= static_cast<size_t>(avg_limit_)) {
+                // 1. 計算平均值
                 cv::Point2f sum(0, 0);
                 for (const auto &pt : avg_buffer_b_)
                   sum += pt;
-                cv::Point2f avg = sum * (1.0f / (float)avg_buffer_b_.size());
+                cv::Point2f mean = sum * (1.0f / (float)avg_buffer_b_.size());
+
+                // 2. 計算標準差
+                float sum_sq_x = 0, sum_sq_y = 0;
+                for (const auto &pt : avg_buffer_b_) {
+                  sum_sq_x += (pt.x - mean.x) * (pt.x - mean.x);
+                  sum_sq_y += (pt.y - mean.y) * (pt.y - mean.y);
+                }
+                float std_x = std::sqrt(sum_sq_x / (float)avg_buffer_b_.size());
+                float std_y = std::sqrt(sum_sq_y / (float)avg_buffer_b_.size());
+
+                // 3. 過濾離群值後重新平均
+                cv::Point2f filtered_sum(0, 0);
+                int filtered_count = 0;
+                for (const auto &pt : avg_buffer_b_) {
+                  if (std::abs(pt.x - mean.x) <= 1.5f * std_x + 0.1f &&
+                      std::abs(pt.y - mean.y) <= 1.5f * std_y + 0.1f) {
+                    filtered_sum += pt;
+                    filtered_count++;
+                  }
+                }
+                cv::Point2f avg = (filtered_count > 0)
+                    ? filtered_sum * (1.0f / (float)filtered_count)
+                    : mean;
 
                 calib_points_b_.push_back(avg);
                 avg_buffer_b_.clear();
@@ -721,7 +787,9 @@ void IRTracker::processingLoop() {
 
                 int current_idx = (int)calib_points_b_.size() - 1;
                 std::cout << "[CALIB] Camera B point " << (current_idx + 1)
-                          << "/4 Averaged: (" << avg.x << ", " << avg.y << ")"
+                          << "/4 Averaged: (" << avg.x << ", " << avg.y 
+                          << ") std=(" << std_x << "," << std_y 
+                          << ") used " << filtered_count << "/" << avg_limit_ << " samples"
                           << std::endl;
 
                 {
@@ -733,16 +801,29 @@ void IRTracker::processingLoop() {
                   latest_shots_.push_back(
                       {0, dst_points_[current_idx].x,
                        dst_points_[current_idx].y, ms, ++shot_seq_, 'B',
-                       0}); // 0 for calibration intensity for now
+                       0});
                 }
 
                 if (calib_points_b_.size() == 4) {
                   impl_->homography_b = cv::findHomography(
                       calib_points_b_,
-                      dst_points_);           // Corrected to homography_b
-                  impl_->calibrated_b = true; // Corrected to calibrated_b
+                      dst_points_);
+                  impl_->calibrated_b = true;
                   impl_->saveCalibration("calibration_b.json",
                                          impl_->homography_b);
+
+                  // 計算重投影誤差
+                  std::vector<cv::Point2f> reproj;
+                  cv::perspectiveTransform(calib_points_b_, reproj, impl_->homography_b);
+                  double total_err = 0;
+                  for (size_t i = 0; i < 4; i++) {
+                    double dx = reproj[i].x - dst_points_[i].x;
+                    double dy = reproj[i].y - dst_points_[i].y;
+                    total_err += std::sqrt(dx*dx + dy*dy);
+                  }
+                  calib_reproj_error_b_ = total_err / 4.0;
+                  std::cout << "[CALIB] Camera B reprojection error: " 
+                            << calib_reproj_error_b_ << std::endl;
                 }
               }
             }
