@@ -1,0 +1,14 @@
+# T91 IR 射擊追蹤系統 - Python 依賴套件
+# 安裝方式: pip install -r requirements.txt
+
+# Basler 攝影機 SDK
+pypylon>=1.9.0
+
+# 影像處理
+opencv-python>=4.8.0
+numpy>=1.24.0
+
+# 音效播放
+pygame>=2.5.0
+
+# 其他

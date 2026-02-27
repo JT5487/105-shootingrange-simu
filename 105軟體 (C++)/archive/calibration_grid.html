@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T91 系統校正與測試網格 (v1.1.5)</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050a14;
+            color: #00d4ff;
+            font-family: 'Microsoft JhengHei', sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 綠色邊框代表最新版 */
+        body {
+            border: 10px solid #2ecc71;
+            box-sizing: border-box;
+        }
+
+        #debug-status {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: #2ecc71;
+            color: #000;
+            text-align: center;
+            font-weight: bold;
+            padding: 10px;
+            z-index: 3000;
+            font-size: 24px;
+        }
+
+        .header {
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 5em;
+            margin: 0;
+        }
+
+        /* 6 個區域 */
+        .zones {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            opacity: 0.3;
+        }
+
+        .zone {
+            flex: 1;
+            border-left: 1px dashed rgba(0, 212, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .zone-label {
+            font-size: 8em;
+            font-weight: bold;
+        }
+
+        /* 4 個校正點容器 */
+        .corner {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+        }
+
+        /* 紅色十字線 */
+        .corner::before,
+        .corner::after {
+            content: '';
+            position: absolute;
+            background-color: #ff4757;
+        }
+
+        .corner::before {
+            width: 100%;
+            height: 4px;
+            top: 50%;
+            left: 0;
+            margin-top: -2px;
+        }
+
+        .corner::after {
+            width: 4px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+            margin-left: -2px;
+        }
+
+        /* 紅色圈圈 */
+        .corner-aim {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border: 5px solid #ff4757;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* 精確座標對齊 (5%, 95%) */
+        .lt {
+            top: 5%;
+            left: 5%;
+        }
+
+        .rt {
+            top: 5%;
+            left: 95%;
+        }
+
+        .rb {
+            top: 95%;
+            left: 95%;
+        }
+
+        .lb {
+            top: 95%;
+            left: 5%;
+        }
+
+        /* 黃色引導外圈 */
+        .target-highlighter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border: 10px solid #f1c40f;
+            border-radius: 50%;
+            box-shadow: 0 0 50px #f1c40f;
+            display: none;
+            animation: pulse-ring 1s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+        }
+
+        .instruction {
+            position: absolute;
+            bottom: 30px;
+            width: 100%;
+            text-align: center;
+            font-size: 2.2em;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 25px 0;
+            z-index: 1000;
+            border-top: 4px solid #00d4ff;
+            color: #fff;
+        }
+
+        .instruction span {
+            color: #f1c40f;
+            font-weight: bold;
+            text-decoration: underline;
+        }
+
+        /* 命中點點樣式 */
+        .hit-marker {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: #f00;
+            border: 4px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 30px #f00;
+            z-index: 9999;
+            animation: fadeOut 1s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(2);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+        }
+
+        #hit-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="debug-status">正在與後端連線 (Version 1.1.5)...</div>
+
+    <div class="header">
+        <h1>T91 TEST GRID</h1>
+        <p>校正與測試網格</p>
+    </div>
+
+    <div class="zones">
+        <div class="zone">
+            <div class="zone-label">1</div>
+        </div>
+        <div class="zone">
+            <div class="zone-label">2</div>
+        </div>
+        <div class="zone">
+            <div class="zone-label">3</div>
+        </div>
+        <div class="zone">
+            <div class="zone-label">4</div>
+        </div>
+        <div class="zone">
+            <div class="zone-label">5</div>
+        </div>
+        <div class="zone">
+            <div class="zone-label">6</div>
+        </div>
+    </div>
+
+    <div class="corner lt" id="corner-0">
+        <div class="corner-aim"></div>
+        <div class="target-highlighter"></div>
+    </div>
+    <div class="corner rt" id="corner-1">
+        <div class="corner-aim"></div>
+        <div class="target-highlighter"></div>
+    </div>
+    <div class="corner rb" id="corner-2">
+        <div class="corner-aim"></div>
+        <div class="target-highlighter"></div>
+    </div>
+    <div class="corner lb" id="corner-3">
+        <div class="corner-aim"></div>
+        <div class="target-highlighter"></div>
+    </div>
+
+    <div id="hit-container"></div>
+
+    <div class="instruction" id="instruction-text">
+        [系統就緒]：點擊畫面進入全螢幕
+    </div>
+
+    <script>
+        document.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            }
+        });
+
+        const hitContainer = document.getElementById('hit-container');
+        const instructionText = document.getElementById('instruction-text');
+        const debugStatus = document.getElementById('debug-status');
+
+        const corners = [
+            document.getElementById('corner-0'),
+            document.getElementById('corner-1'),
+            document.getElementById('corner-2'),
+            document.getElementById('corner-3')
+        ];
+
+        let lastCalibCount = -1;
+        const calibNames = ["左上角", "右上角", "右下角", "左下角"];
+
+        function updateGuidance(isCalibrating, count) {
+            // 隱藏所有黃圈
+            corners.forEach(c => {
+                c.querySelector('.target-highlighter').style.display = 'none';
+            });
+
+            if (isCalibrating) {
+                if (count < 4) {
+                    corners[count].querySelector('.target-highlighter').style.display = 'block';
+                    instructionText.innerHTML = `[定位中]：請射擊黃色外圈標記 -> <span>${calibNames[count]}</span> (${count}/4)`;
+                } else {
+                    instructionText.innerHTML = `<span style="color: #2ecc71;">[計算中]</span>：正在更新座標...`;
+                }
+            } else {
+                if (count >= 4) {
+                    instructionText.innerHTML = `<span style="color: #2ecc71;">[完成定位]</span>：請開始對本畫面任意射擊`;
+                } else {
+                    instructionText.innerHTML = `[校正待機]：請至控制台點選「重新校準」`;
+                }
+            }
+        }
+
+        function createHitMarker(x, y) {
+            const marker = document.createElement('div');
+            marker.className = 'hit-marker';
+            const left = (x + 1) * 50;
+            const top = (1 - y) * 50;
+            marker.style.left = left + 'vw';
+            marker.style.top = top + 'vh';
+            hitContainer.appendChild(marker);
+            setTimeout(() => marker.remove(), 1000);
+        }
+
+        async function pollData() {
+            try {
+                const stateRes = await fetch('http://localhost:8080/state');
+                if (stateRes.ok) {
+                    const state = await stateRes.json();
+                    debugStatus.innerText = `連線正常 | 進度: ${state.calib_count}/4 | 狀態: ${state.is_calibrating ? '校正中' : '一般模式'} (v1.1.5)`;
+                    debugStatus.style.background = state.is_calibrating ? '#f1c40f' : '#2ecc71';
+
+                    updateGuidance(state.is_calibrating, state.calib_count);
+                }
+                const shotsRes = await fetch('http://localhost:8080/shots');
+                if (shotsRes.ok) {
+                    const shots = await shotsRes.json();
+                    shots.forEach(shot => createHitMarker(shot.x, shot.y));
+                }
+            } catch (err) {
+                debugStatus.innerText = `後端連線中斷...或尚未啟動 t91_tracker.exe (v1.1.5)`;
+                debugStatus.style.background = '#e74c3c';
+            }
+            setTimeout(pollData, 100);
+        }
+
+        pollData();
+    </script>
+</body>
+
+</html>

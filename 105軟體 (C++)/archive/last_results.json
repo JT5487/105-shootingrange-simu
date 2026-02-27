@@ -1,0 +1,41 @@
+{
+    "results": [
+        {
+            "id": 1,
+            "name": "射手1",
+            "score": 0
+        },
+        {
+            "id": 2,
+            "name": "射手2",
+            "score": 0
+        },
+        {
+            "id": 3,
+            "name": "射手3",
+            "score": 0
+        },
+        {
+            "id": 4,
+            "name": "射手4",
+            "score": 178
+        },
+        {
+            "id": 5,
+            "name": "射手5",
+            "score": 74
+        },
+        {
+            "id": 6,
+            "name": "射手6",
+            "score": 116
+        }
+    ],
+    "session": {
+        "batch": "",
+        "company": "",
+        "mode": "25",
+        "squad": "",
+        "timestamp": "2025-12-23T14:49:38.576Z"
+    }
+}

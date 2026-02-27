@@ -1,0 +1,23 @@
+CXX = C:/msys64/mingw64/bin/g++
+PYLON_DIR = C:/PROGRA~1/Basler/pylon/Development
+CXXFLAGS = -std=c++17 -O3 -Wall -D_WIN32_WINNT=0x0A00 -DPYLON_WIN_BUILD -DPYLON_64_BUILD -I./include -I"C:/msys64/mingw64/include/opencv4" -I"$(PYLON_DIR)/include"
+CXXFLAGS += -DUSE_PYLON
+
+LDFLAGS = -L"C:/msys64/mingw64/lib" -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_videoio -lopencv_calib3d -lopencv_imgcodecs
+LDFLAGS += -L"$(PYLON_DIR)/lib/x64" -lPylonC_v10 -lPylonBase_v11 -lPylonUtility_v11 -lGCBase_MD_VC142_v3_5_Basler_pylon_v1 -lGenApi_MD_VC142_v3_5_Basler_pylon_v1
+LDFLAGS += -lws2_32 -lcrypt32 -liphlpapi -lpthread -lstdc++
+
+SRC = src/main.cpp src/IRTracker.cpp src/CameraManager.cpp src/HitDetectionService.cpp src/CalibrationService.cpp
+OBJ = $(SRC:.cpp=.o)
+TARGET = t91_tracker.exe
+
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CXX) -o $@ $^ $(LDFLAGS)
+
+%.o: %.cpp
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+clean:
+	rm -f src/*.o $(TARGET)

@@ -1,0 +1,35 @@
+# Build outputs
+*.o
+*.exe
+*.log
+*.txt.bak
+
+# IDE / tool
+.claude/
+.agent/
+nul
+
+# Large binary - keep tracked via LFS or exclude
+# (keeping .png, .wav, .m4a as they are project assets)
+
+# Chrome profiles (runtime generated)
+105軟體 (C++)/chrome_profiles/
+105軟體 (C++)/edge_profiles/
+
+# Runtime data
+105軟體 (C++)/cpp/t91_debug.log
+105軟體 (C++)/cpp/build.log
+105軟體 (C++)/cpp/compile.log
+105軟體 (C++)/cpp/compile_err.txt
+105軟體 (C++)/cpp/compile_out.txt
+105軟體 (C++)/cpp/compile_error.txt
+105軟體 (C++)/cpp/error.log
+105軟體 (C++)/cpp/error.txt
+105軟體 (C++)/cpp/link_error.txt
+105軟體 (C++)/cpp/link_error2.txt
+105軟體 (C++)/cpp/irtracker_error.txt
+105軟體 (C++)/cpp/build_error.log
+105軟體 (C++)/cpp/nul
+105軟體 (C++)/cpp/test.exe
+105軟體 (C++)/cpp/test.cpp
+105軟體 (C++)/cpp/test_simple.cpp

@@ -1,0 +1,3966 @@
+<!doctype html>
+<html lang="zh-TW">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>[T91_CTRL] 射擊訓練控制台</title>
+        <style>
+            /* === 整體風格設定 (CSS) === */
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+
+            body {
+                /* 設定字體、深色背景漸層以及文字顏色 */
+                font-family: "Microsoft JhengHei", "Arial", sans-serif;
+                background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+                height: 100vh;
+                color: #fff;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                overflow: hidden;
+            }
+
+            .container {
+                flex: 1;
+                max-width: 100%;
+                margin: 0 auto;
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                overflow: hidden;
+            }
+
+            h1 {
+                /* 主標題：縮小間距以節省空間 */
+                text-align: center;
+                margin: 0;
+                font-size: 1.4em;
+                color: #00d4ff;
+                text-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+                flex-shrink: 0;
+                padding: 4px 0;
+            }
+
+            h1 {
+                color: #00d4ff;
+                text-align: center;
+                margin-bottom: 15px;
+                font-size: 2.2em;
+                text-shadow: 0 0 20px rgba(0, 212, 255, 0.5);
+                font-weight: 800;
+            }
+
+            .panel {
+                /* 面板：調整內距與間距以節省空間 */
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                padding: 8px;
+                margin-bottom: 0;
+                backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                display: flex;
+                flex-direction: column;
+            }
+
+            .panel h2 {
+                /* 小面板標題：縮小間距 */
+                font-size: 0.95em;
+                margin-bottom: 6px;
+                color: #00d4ff;
+                border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+                padding-bottom: 3px;
+            }
+
+            .dashboard-main {
+                flex: 1;
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 8px;
+                min-height: 0;
+                overflow: hidden;
+            }
+
+            /* 在大螢幕上使用三欄佈局 */
+            @media (min-width: 1200px) {
+                .dashboard-main {
+                    grid-template-columns: 380px 1fr 380px;
+                }
+            }
+
+            .dashboard-col {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                min-height: 0;
+                overflow-y: auto;
+            }
+
+            .shooter-grid-panel {
+                flex: 1;
+            }
+
+            /* === 選項按鈕組樣式 === */
+            .radio-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                margin-top: 6px;
+            }
+
+            /* 27吋螢幕優化：確保不需滾動 */
+            @media (min-height: 900px) {
+                body {
+                    max-height: 100vh;
+                }
+
+                .dashboard-main {
+                    max-height: calc(100vh - 80px);
+                }
+            }
+
+            .radio-btn {
+                /* 隱藏原始的 HTML 圓點按鈕，改用自訂的漂亮按鈕 */
+                display: none;
+            }
+
+            .radio-label {
+                /* 自訂按鈕外觀：當滑鼠移上去或被選中時會變色 */
+                padding: 10px 20px;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+
+            .radio-label:hover {
+                background: rgba(0, 212, 255, 0.2);
+            }
+
+            .radio-btn:checked + .radio-label {
+                /* 選中時的發光效果 */
+                background: rgba(0, 212, 255, 0.3);
+                border-color: #00d4ff;
+                box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+            }
+
+            /* === 倒靶規則細節樣式 === */
+            .knockdown-options {
+                margin-top: 15px;
+            }
+
+            .knockdown-option {
+                /* 每一條倒靶規則的橫條 */
+                display: flex;
+                align-items: center;
+                margin-bottom: 10px;
+                padding: 10px;
+                background: rgba(255, 255, 255, 0.05);
+                border-radius: 8px;
+            }
+
+            .knockdown-option input[type="number"],
+            .info-input {
+                /* 數字輸入框與一般輸入框樣式 */
+                padding: 5px 10px;
+                background: rgba(255, 255, 255, 0.1);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                border-radius: 5px;
+                color: #fff;
+                width: 100%;
+            }
+
+            /* 下拉選單選項樣式 - 確保可見 */
+            select option {
+                background-color: #1a1a2e;
+                color: #00d4ff;
+                padding: 8px;
+            }
+
+            select option:hover {
+                background-color: #00d4ff;
+                color: #000;
+            }
+
+            .shooter-name-input {
+                margin: 8px auto;
+                padding: 12px 15px;
+                /* 高度翻倍 */
+                background: rgba(0, 0, 0, 0.5);
+                border: 2px solid rgba(0, 212, 255, 0.6);
+                border-radius: 8px;
+                color: #fff;
+                text-align: center;
+                width: 96%;
+                font-size: 1.5em;
+                /* 文字放大 */
+                font-weight: bold;
+                box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+            }
+
+            .target-visual-container {
+                position: relative;
+                height: 120px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+                overflow: hidden;
+                flex: 1;
+            }
+
+            .target-img {
+                height: 80px;
+                transition: all 0.5s ease;
+                transform-origin: bottom center;
+            }
+
+            .target-img.img-knocked {
+                transform: rotateY(90deg);
+                /* 改為轉靶效果 */
+                filter: grayscale(1) brightness(0.3);
+                opacity: 0;
+                transition:
+                    transform 0.4s ease,
+                    opacity 0.4s ease;
+            }
+
+            /* 起靶/倒靶按鈕樣式 */
+            .target-btn {
+                margin-top: 8px;
+                padding: 8px 16px;
+                border: none;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: bold;
+                font-size: 0.95em;
+                transition: all 0.3s ease;
+                width: 80%;
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .target-btn.standing {
+                background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+                color: white;
+            }
+
+            .target-btn.knocked {
+                background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+                color: white;
+            }
+
+            .target-btn:hover {
+                transform: scale(1.05);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            }
+
+            /* === 按鈕風格區分 === */
+            .btn-group {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 10px;
+                margin-top: 15px;
+            }
+
+            .btn {
+                padding: 12px 24px;
+                border: none;
+                border-radius: 8px;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: bold;
+            }
+
+            .btn-primary {
+                background: linear-gradient(135deg, #00d4ff 0%, #0099cc 100%);
+                color: #fff;
+            }
+
+            /* 藍色 */
+            .btn-danger {
+                background: linear-gradient(135deg, #ff4757 0%, #cc0022 100%);
+                color: #fff;
+            }
+
+            /* 紅色 */
+            .btn-warning {
+                background: linear-gradient(135deg, #ffa502 0%, #cc8400 100%);
+                color: #fff;
+            }
+
+            /* 橘色 */
+            .btn-success {
+                background: linear-gradient(135deg, #2ed573 0%, #1e9c52 100%);
+                color: #fff;
+            }
+
+            /* 綠色 */
+
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+            }
+
+            /* 射擊模式按鈕選中狀態 */
+            .mode-btn-active {
+                background: linear-gradient(
+                    135deg,
+                    #00d4ff 0%,
+                    #0099cc 100%
+                ) !important;
+                border: 2px solid #fff !important;
+                box-shadow: 0 0 20px rgba(0, 212, 255, 0.6);
+            }
+
+            /* === 射手卡片格狀排列：改為 2x3 或垂直排列以適應大螢幕佈局 === */
+            .shooter-grid {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 6px;
+                flex: 1;
+            }
+
+            /* 在非常寬的螢幕上，射手卡片改為 3x2 */
+            @media (min-width: 1600px) {
+                .shooter-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                }
+            }
+
+            .shooter-card {
+                background: rgba(25, 30, 45, 0.6);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 12px;
+                padding: 12px;
+                text-align: center;
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                min-height: 220px;
+                transition: all 0.3s ease;
+            }
+
+            .shooter-main-content {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                margin: 10px 0;
+                gap: 10px;
+            }
+
+            .shooter-card.hit {
+                /* 被擊中時的閃爍動畫 */
+                animation: hitFlash 0.3s ease;
+            }
+
+            @keyframes hitFlash {
+                0% {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+
+                50% {
+                    background: rgba(0, 212, 255, 0.5);
+                }
+
+                100% {
+                    background: rgba(255, 255, 255, 0.1);
+                }
+            }
+
+            .shooter-id {
+                font-size: 1.5em;
+                font-weight: bold;
+                color: #00d4ff;
+            }
+
+            .shooter-hits {
+                font-size: 5em;
+                /* 分數放大 */
+                margin: 0;
+                font-family: "Courier New", Courier, monospace;
+                flex: 1;
+                text-align: center;
+                color: #fff;
+                text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+            }
+
+            .shooter-status {
+                /* 立靶/倒靶的圓角標籤 */
+                display: inline-block;
+                padding: 6px 16px;
+                border-radius: 20px;
+                font-size: 1em;
+            }
+
+            .status-up {
+                background: #2ed573;
+            }
+
+            /* 立靶顯示綠色 */
+            .status-down {
+                background: #ff4757;
+            }
+
+            /* 倒靶顯示紅色 */
+
+            /* === 連線狀態燈號 === */
+            .connection-status {
+                display: flex;
+                gap: 20px;
+                margin-top: 15px;
+            }
+
+            .connection-item {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .status-dot {
+                width: 12px;
+                height: 12px;
+                border-radius: 50%;
+            }
+
+            .status-connected {
+                background: #2ed573;
+                box-shadow: 0 0 10px #2ed573;
+            }
+
+            /* 連線正常燈：綠色 */
+            .status-disconnected {
+                background: #ff4757;
+            }
+
+            /* 連線中斷燈：紅色 */
+
+            /* === 靶場程序控制 (SOP) 樣式 === */
+            .sop-panel {
+                border: 2px solid rgba(0, 212, 255, 0.3);
+                background: rgba(0, 212, 255, 0.05);
+            }
+
+            .sop-controls {
+                display: flex;
+                align-items: center;
+                justify-content: space-around;
+                gap: 20px;
+                margin-top: 20px;
+            }
+
+            .sop-item {
+                flex: 1;
+                text-align: center;
+            }
+
+            .sop-label {
+                display: block;
+                font-size: 0.9em;
+                color: #aaa;
+                margin-bottom: 10px;
+            }
+
+            .sop-btn {
+                width: 100%;
+                padding: 20px;
+                font-size: 1.5em;
+                border-radius: 12px;
+                border: none;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                font-weight: 900;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            }
+
+            /* 目前要執行的命令：鮮豔橘黃色 */
+            .sop-btn-active {
+                background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+                color: #000;
+                animation: pulse 2s infinite;
+            }
+
+            /* 下一個待執行的命令：深灰色 */
+            .sop-btn-next {
+                background: rgba(255, 255, 255, 0.1);
+                color: #888;
+                cursor: not-allowed;
+            }
+
+            /* 按完以後的完成狀態：綠色 */
+            .sop-btn-done {
+                background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+                color: #fff;
+            }
+
+            @keyframes pulse {
+                0% {
+                    box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.4);
+                }
+
+                70% {
+                    box-shadow: 0 0 0 20px rgba(241, 196, 15, 0);
+                }
+
+                100% {
+                    box-shadow: 0 0 0 0 rgba(241, 196, 15, 0);
+                }
+            }
+
+            /* 中小型螢幕適配 */
+            @media (max-width: 1199px) {
+                .dashboard-main {
+                    grid-template-columns: 1fr 1.5fr;
+                }
+
+                /* 最後一個欄位（連線狀態等）移到下方或讓它自適應 */
+                .dashboard-col:last-child {
+                    grid-column: span 2;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                    gap: 15px;
+                }
+            }
+
+            @media (max-width: 900px) {
+                .dashboard-main {
+                    grid-template-columns: 1fr;
+                }
+
+                .dashboard-col:last-child {
+                    grid-column: span 1;
+                }
+
+                .shooter-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+            }
+
+            @media (max-width: 600px) {
+                .shooter-grid {
+                    grid-template-columns: 1fr;
+                }
+
+                .sop-controls {
+                    flex-direction: column;
+                    gap: 15px;
+                }
+
+                .sop-item {
+                    width: 100% !important;
+                    max-width: none !important;
+                }
+            }
+        </style>
+        <script src="./xlsx.full.min.js"></script>
+    </head>
+
+    <body>
+        <div class="container">
+            <h1>射擊訓練控制台</h1>
+
+            <div class="dashboard-main">
+                <!-- 左欄：環境、模式、手動控制 -->
+                <div class="dashboard-col">
+                    <div class="panel">
+                        <h2 style="margin-bottom: 10px">訓練梯次資訊</h2>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 15px;
+                                flex-wrap: wrap;
+                                padding: 5px 0;
+                            "
+                        >
+                            <div
+                                style="
+                                    flex: 1;
+                                    min-width: 110px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                "
+                            >
+                                <span
+                                    style="
+                                        font-size: 1em;
+                                        color: #fff;
+                                        white-space: nowrap;
+                                        font-weight: bold;
+                                    "
+                                    >梯次:</span
+                                >
+                                <input
+                                    type="text"
+                                    id="session-batch"
+                                    class="info-input"
+                                    placeholder="105-1"
+                                    style="
+                                        flex: 1;
+                                        padding: 6px 10px;
+                                        font-size: 1.1em;
+                                    "
+                                />
+                            </div>
+                            <div
+                                style="
+                                    flex: 1;
+                                    min-width: 110px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                "
+                            >
+                                <span
+                                    style="
+                                        font-size: 1em;
+                                        color: #fff;
+                                        white-space: nowrap;
+                                        font-weight: bold;
+                                    "
+                                    >連隊:</span
+                                >
+                                <input
+                                    type="text"
+                                    id="session-company"
+                                    class="info-input"
+                                    placeholder="一連"
+                                    style="
+                                        flex: 1;
+                                        padding: 6px 10px;
+                                        font-size: 1.1em;
+                                    "
+                                />
+                            </div>
+                            <div
+                                style="
+                                    flex: 1.5;
+                                    min-width: 130px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                "
+                            >
+                                <span
+                                    style="
+                                        font-size: 1em;
+                                        color: #fff;
+                                        white-space: nowrap;
+                                        font-weight: bold;
+                                    "
+                                    >班別:</span
+                                >
+                                <input
+                                    type="text"
+                                    id="session-squad"
+                                    class="info-input"
+                                    placeholder="第三班"
+                                    style="
+                                        flex: 1;
+                                        padding: 6px 10px;
+                                        font-size: 1.1em;
+                                    "
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2 style="margin-bottom: 10px">🌤️ 環境設定</h2>
+                        <div
+                            style="
+                                display: flex;
+                                gap: 20px;
+                                align-items: center;
+                                flex-wrap: wrap;
+                                padding: 5px 0;
+                            "
+                        >
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                "
+                            >
+                                <span
+                                    style="
+                                        font-size: 1.1em;
+                                        color: #fff;
+                                        font-weight: bold;
+                                    "
+                                    >天候:</span
+                                >
+                                <div
+                                    class="radio-group"
+                                    style="margin: 0; gap: 8px"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="weather"
+                                        id="weather-sunny"
+                                        value="sunny"
+                                        class="radio-btn"
+                                        checked
+                                        onchange="applySettings()"
+                                    />
+                                    <label
+                                        for="weather-sunny"
+                                        class="radio-label"
+                                        style="
+                                            padding: 8px 12px;
+                                            font-size: 1.1em;
+                                            font-weight: bold;
+                                        "
+                                        >☀️ 晴天</label
+                                    >
+                                    <input
+                                        type="radio"
+                                        name="weather"
+                                        id="weather-rainy"
+                                        value="rainy"
+                                        class="radio-btn"
+                                        onchange="applySettings()"
+                                    />
+                                    <label
+                                        for="weather-rainy"
+                                        class="radio-label"
+                                        style="
+                                            padding: 8px 12px;
+                                            font-size: 1.1em;
+                                            font-weight: bold;
+                                        "
+                                        >🌧️ 雨天</label
+                                    >
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                "
+                            >
+                                <span
+                                    style="
+                                        font-size: 1.1em;
+                                        color: #fff;
+                                        font-weight: bold;
+                                    "
+                                    >時段:</span
+                                >
+                                <div
+                                    class="radio-group"
+                                    style="margin: 0; gap: 8px"
+                                >
+                                    <input
+                                        type="radio"
+                                        name="time"
+                                        id="time-day"
+                                        value="day"
+                                        class="radio-btn"
+                                        checked
+                                        onchange="applySettings()"
+                                    />
+                                    <label
+                                        for="time-day"
+                                        class="radio-label"
+                                        style="
+                                            padding: 8px 12px;
+                                            font-size: 1.1em;
+                                            font-weight: 800;
+                                        "
+                                        >日間</label
+                                    >
+                                    <input
+                                        type="radio"
+                                        name="time"
+                                        id="time-night"
+                                        value="night"
+                                        class="radio-btn"
+                                        onchange="applySettings()"
+                                    />
+                                    <label
+                                        for="time-night"
+                                        class="radio-label"
+                                        style="
+                                            padding: 8px 12px;
+                                            font-size: 1.1em;
+                                            font-weight: 800;
+                                        "
+                                        >夜間</label
+                                    >
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2>射擊模式選擇</h2>
+                        <div
+                            class="btn-group"
+                            style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 10px;
+                            "
+                        >
+                            <button
+                                id="mode-25"
+                                class="btn mode-btn-active"
+                                style="
+                                    background: rgba(255, 255, 255, 0.1);
+                                    padding: 18px 5px;
+                                    font-size: 1.3em;
+                                    font-weight: bold;
+                                "
+                                onclick="setShootingMode('25')"
+                            >
+                                25公尺射擊
+                            </button>
+                            <button
+                                id="mode-75"
+                                class="btn"
+                                style="
+                                    background: rgba(255, 255, 255, 0.1);
+                                    padding: 18px 5px;
+                                    font-size: 1.3em;
+                                    font-weight: bold;
+                                "
+                                onclick="setShootingMode('75')"
+                            >
+                                75公尺射擊
+                            </button>
+                            <button
+                                id="mode-175"
+                                class="btn"
+                                style="
+                                    background: rgba(255, 255, 255, 0.1);
+                                    padding: 18px 5px;
+                                    font-size: 1.3em;
+                                    font-weight: bold;
+                                "
+                                onclick="setShootingMode('175')"
+                            >
+                                175公尺射擊
+                            </button>
+                            <button
+                                id="mode-300"
+                                class="btn"
+                                style="
+                                    background: rgba(255, 255, 255, 0.1);
+                                    padding: 18px 5px;
+                                    font-size: 1.3em;
+                                    font-weight: bold;
+                                "
+                                onclick="setShootingMode('300')"
+                            >
+                                300公尺射擊
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2 style="margin-bottom: 5px">IR 偵測設定</h2>
+                        <div
+                            style="
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                            "
+                        >
+                            <span
+                                style="
+                                    font-size: 0.85em;
+                                    color: #aaa;
+                                    white-space: nowrap;
+                                "
+                                >靈敏度(<span id="threshold-val">200</span
+                                >):</span
+                            >
+                            <input
+                                type="range"
+                                id="detection-threshold"
+                                min="0"
+                                max="255"
+                                value="200"
+                                style="flex: 1; height: 15px"
+                                oninput="updateThreshold(this.value)"
+                            />
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2 style="margin-bottom: 8px">系統連線</h2>
+                        <div
+                            class="connection-status"
+                            style="
+                                flex-direction: row;
+                                flex-wrap: wrap;
+                                gap: 15px;
+                                justify-content: flex-start;
+                            "
+                        >
+                            <div
+                                class="connection-item"
+                                style="font-size: 0.9em"
+                            >
+                                <div
+                                    class="status-dot"
+                                    id="conn-camera-a"
+                                ></div>
+                                <span>攝影機A</span>
+                            </div>
+                            <div
+                                class="connection-item"
+                                style="font-size: 0.9em"
+                            >
+                                <div
+                                    class="status-dot"
+                                    id="conn-camera-b"
+                                ></div>
+                                <span>攝影機B</span>
+                            </div>
+                            <div
+                                class="connection-item"
+                                style="font-size: 0.9em"
+                            >
+                                <div class="status-dot" id="conn-python"></div>
+                                <span>追蹤程式</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="panel"
+                        style="
+                            margin-top: auto;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            background: transparent;
+                            border: none;
+                            box-shadow: none;
+                            padding: 20px 0;
+                        "
+                    >
+                        <img
+                            src="../陸軍官校校徽.png"
+                            alt="陸軍官校校徽"
+                            style="
+                                width: 200px;
+                                max-width: 80%;
+                                opacity: 0.9;
+                                filter: drop-shadow(
+                                    0 0 15px rgba(0, 212, 255, 0.3)
+                                );
+                            "
+                        />
+                    </div>
+                </div>
+
+                <!-- 中欄：即時成績顯示 -->
+                <div class="dashboard-col">
+                    <div class="panel shooter-grid-panel">
+                        <h2>射手即時成績 (Live Scores)</h2>
+                        <div class="shooter-grid">
+                            <div class="shooter-card" id="shooter-1">
+                                <input
+                                    type="text"
+                                    id="name-1"
+                                    class="shooter-name-input"
+                                    placeholder="射手 1 姓名"
+                                />
+                                <div class="shooter-main-content">
+                                    <div class="target-visual-container">
+                                        <img
+                                            src="../全身靶55x107靶板-去背.png"
+                                            class="target-img"
+                                            id="target-img-1"
+                                        />
+                                        <div
+                                            id="status-1"
+                                            class="shooter-status status-up"
+                                        >
+                                            ● 立靶
+                                        </div>
+                                    </div>
+                                    <div class="shooter-hits" id="hits-1">
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    class="target-btn standing"
+                                    id="target-btn-1"
+                                    onclick="toggleTarget(1)"
+                                >
+                                    倒靶
+                                </button>
+                            </div>
+                            <div class="shooter-card" id="shooter-2">
+                                <input
+                                    type="text"
+                                    id="name-2"
+                                    class="shooter-name-input"
+                                    placeholder="射手 2 姓名"
+                                />
+                                <div class="shooter-main-content">
+                                    <div class="target-visual-container">
+                                        <img
+                                            src="../全身靶55x107靶板-去背.png"
+                                            class="target-img"
+                                            id="target-img-2"
+                                        />
+                                        <div
+                                            id="status-2"
+                                            class="shooter-status status-up"
+                                        >
+                                            ● 立靶
+                                        </div>
+                                    </div>
+                                    <div class="shooter-hits" id="hits-2">
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    class="target-btn standing"
+                                    id="target-btn-2"
+                                    onclick="toggleTarget(2)"
+                                >
+                                    倒靶
+                                </button>
+                            </div>
+                            <div class="shooter-card" id="shooter-3">
+                                <input
+                                    type="text"
+                                    id="name-3"
+                                    class="shooter-name-input"
+                                    placeholder="射手 3 姓名"
+                                />
+                                <div class="shooter-main-content">
+                                    <div class="target-visual-container">
+                                        <img
+                                            src="../全身靶55x107靶板-去背.png"
+                                            class="target-img"
+                                            id="target-img-3"
+                                        />
+                                        <div
+                                            id="status-3"
+                                            class="shooter-status status-up"
+                                        >
+                                            ● 立靶
+                                        </div>
+                                    </div>
+                                    <div class="shooter-hits" id="hits-3">
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    class="target-btn standing"
+                                    id="target-btn-3"
+                                    onclick="toggleTarget(3)"
+                                >
+                                    倒靶
+                                </button>
+                            </div>
+                            <div class="shooter-card" id="shooter-4">
+                                <input
+                                    type="text"
+                                    id="name-4"
+                                    class="shooter-name-input"
+                                    placeholder="射手 4 姓名"
+                                />
+                                <div class="shooter-main-content">
+                                    <div class="target-visual-container">
+                                        <img
+                                            src="../全身靶55x107靶板-去背.png"
+                                            class="target-img"
+                                            id="target-img-4"
+                                        />
+                                        <div
+                                            id="status-4"
+                                            class="shooter-status status-up"
+                                        >
+                                            ● 立靶
+                                        </div>
+                                    </div>
+                                    <div class="shooter-hits" id="hits-4">
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    class="target-btn standing"
+                                    id="target-btn-4"
+                                    onclick="toggleTarget(4)"
+                                >
+                                    倒靶
+                                </button>
+                            </div>
+                            <div class="shooter-card" id="shooter-5">
+                                <input
+                                    type="text"
+                                    id="name-5"
+                                    class="shooter-name-input"
+                                    placeholder="射手 5 姓名"
+                                />
+                                <div class="shooter-main-content">
+                                    <div class="target-visual-container">
+                                        <img
+                                            src="../全身靶55x107靶板-去背.png"
+                                            class="target-img"
+                                            id="target-img-5"
+                                        />
+                                        <div
+                                            id="status-5"
+                                            class="shooter-status status-up"
+                                        >
+                                            ● 立靶
+                                        </div>
+                                    </div>
+                                    <div class="shooter-hits" id="hits-5">
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    class="target-btn standing"
+                                    id="target-btn-5"
+                                    onclick="toggleTarget(5)"
+                                >
+                                    倒靶
+                                </button>
+                            </div>
+                            <div class="shooter-card" id="shooter-6">
+                                <input
+                                    type="text"
+                                    id="name-6"
+                                    class="shooter-name-input"
+                                    placeholder="射手 6 姓名"
+                                />
+                                <div class="shooter-main-content">
+                                    <div class="target-visual-container">
+                                        <img
+                                            src="../全身靶55x107靶板-去背.png"
+                                            class="target-img"
+                                            id="target-img-6"
+                                        />
+                                        <div
+                                            id="status-6"
+                                            class="shooter-status status-up"
+                                        >
+                                            ● 立靶
+                                        </div>
+                                    </div>
+                                    <div class="shooter-hits" id="hits-6">
+                                        0
+                                    </div>
+                                </div>
+                                <button
+                                    class="target-btn standing"
+                                    id="target-btn-6"
+                                    onclick="toggleTarget(6)"
+                                >
+                                    倒靶
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div
+                        class="panel"
+                        style="
+                            background: rgba(0, 212, 255, 0.1);
+                            border: 2px solid rgba(0, 212, 255, 0.3);
+                        "
+                    >
+                        <h2>演練控制</h2>
+                        <div
+                            class="btn-group"
+                            style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 15px;
+                                margin-top: 5px;
+                            "
+                        >
+                            <button
+                                id="training-start-btn"
+                                class="btn btn-success"
+                                style="height: 100px; font-size: 1.8em"
+                                onclick="startTraining()"
+                            >
+                                訓練開始
+                            </button>
+                            <button
+                                id="training-stop-btn"
+                                class="btn btn-danger"
+                                style="height: 100px; font-size: 1.8em"
+                                onclick="stopTraining()"
+                            >
+                                停止射擊
+                            </button>
+                        </div>
+                        <div
+                            id="training-status-box"
+                            style="
+                                margin-top: 10px;
+                                text-align: center;
+                                padding: 10px;
+                                background: rgba(0, 0, 0, 0.3);
+                                border-radius: 8px;
+                                display: none;
+                            "
+                        >
+                            <span
+                                id="training-status-text"
+                                style="
+                                    font-size: 1.2em;
+                                    color: #f1c40f;
+                                    font-weight: bold;
+                                "
+                                >準備中...</span
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 右欄：倒靶設定與連線狀態 -->
+                <div class="dashboard-col">
+                    <div class="panel">
+                        <h2 style="margin-bottom: 8px">倒靶模式</h2>
+                        <div
+                            class="knockdown-options"
+                            style="
+                                display: flex;
+                                gap: 10px;
+                                flex-wrap: wrap;
+                                margin: 0;
+                            "
+                        >
+                            <div
+                                class="knockdown-option"
+                                style="
+                                    flex: 1;
+                                    padding: 5px 8px;
+                                    margin: 0;
+                                    min-width: 100px;
+                                "
+                            >
+                                <input
+                                    type="radio"
+                                    name="knockdown"
+                                    id="kd-hit"
+                                    value="on_hit"
+                                    checked
+                                />
+                                <label for="kd-hit" style="font-size: 0.9em"
+                                    >中彈即倒</label
+                                >
+                            </div>
+                            <div
+                                class="knockdown-option"
+                                style="
+                                    flex: 1.2;
+                                    padding: 5px 8px;
+                                    margin: 0;
+                                    min-width: 120px;
+                                "
+                            >
+                                <input
+                                    type="radio"
+                                    name="knockdown"
+                                    id="kd-time"
+                                    value="on_time"
+                                />
+                                <span style="font-size: 0.9em"
+                                    ><input
+                                        type="number"
+                                        id="kd-time-value"
+                                        value="60"
+                                        style="width: 45px; padding: 2px"
+                                    />s倒</span
+                                >
+                            </div>
+                            <div
+                                class="knockdown-option"
+                                style="
+                                    flex: 1.2;
+                                    padding: 5px 8px;
+                                    margin: 0;
+                                    min-width: 120px;
+                                "
+                            >
+                                <input
+                                    type="radio"
+                                    name="knockdown"
+                                    id="kd-count"
+                                    value="on_count"
+                                />
+                                <span style="font-size: 0.9em"
+                                    ><input
+                                        type="number"
+                                        id="kd-count-value"
+                                        value="10"
+                                        style="width: 40px; padding: 2px"
+                                    />發倒</span
+                                >
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="panel">
+                        <h2 style="margin-bottom: 8px">手動控制</h2>
+                        <div
+                            class="btn-group"
+                            style="
+                                display: grid;
+                                grid-template-columns: 1fr 1fr;
+                                gap: 8px;
+                            "
+                        >
+                            <button
+                                class="btn btn-danger"
+                                style="padding: 10px"
+                                onclick="knockdownAll()"
+                            >
+                                全部倒靶
+                            </button>
+                            <button
+                                class="btn btn-success"
+                                style="padding: 10px"
+                                onclick="resetAll()"
+                            >
+                                全部立靶
+                            </button>
+                            <button
+                                class="btn btn-warning"
+                                style="padding: 10px"
+                                onclick="resetHits()"
+                            >
+                                重置分數
+                            </button>
+                            <button
+                                class="btn btn-primary"
+                                style="padding: 10px"
+                                onclick="startCalibration()"
+                            >
+                                手動校準
+                            </button>
+                            <button
+                                class="btn"
+                                style="padding: 10px; background-color: #9b59b6"
+                                onclick="startAutoCalibrationA()"
+                            >
+                                🎯 自動校準 A
+                            </button>
+                            <button
+                                class="btn"
+                                style="padding: 10px; background-color: #9b59b6"
+                                onclick="startAutoCalibrationB()"
+                            >
+                                🎯 自動校準 B
+                            </button>
+                            <button
+                                class="btn btn-primary"
+                                style="padding: 10px"
+                                onclick="applySettings()"
+                            >
+                                套用設定
+                            </button>
+                            <button
+                                class="btn btn-success"
+                                style="
+                                    padding: 10px;
+                                    font-weight: bold;
+                                    border: 2px solid #fff;
+                                "
+                                onclick="saveResults()"
+                            >
+                                成績存檔
+                            </button>
+                            <button
+                                class="btn btn-danger"
+                                style="
+                                    padding: 10px;
+                                    font-weight: bold;
+                                    border: 2px solid #fff;
+                                    background-color: #ff4757;
+                                "
+                                onclick="shutdownSystem()"
+                            >
+                                結束系統
+                            </button>
+                            <button
+                                class="btn"
+                                style="
+                                    padding: 10px;
+                                    background-color: #9b59b6;
+                                    color: #fff;
+                                "
+                                onclick="testAudio()"
+                            >
+                                🔊 測試音效
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 雷射信號強度監測 -->
+                    <div
+                        class="panel"
+                        style="
+                            border: 2px solid #f1c40f;
+                            background: rgba(241, 196, 15, 0.05);
+                        "
+                    >
+                        <h2 style="color: #f1c40f">
+                            📡 雷射信號監測 (槍枝鑑定)
+                        </h2>
+                        <div
+                            style="
+                                display: flex;
+                                justify-content: space-between;
+                                align-items: center;
+                                margin-bottom: 10px;
+                                background: rgba(0, 0, 0, 0.3);
+                                padding: 8px;
+                                border-radius: 5px;
+                            "
+                        >
+                            <span style="font-size: 0.9em">最新擊發強度:</span>
+                            <span
+                                id="last-intensity"
+                                style="
+                                    font-size: 1.5em;
+                                    font-weight: bold;
+                                    color: #f1c40f;
+                                "
+                                >--</span
+                            >
+                        </div>
+                        <div
+                            style="
+                                font-size: 0.8em;
+                                color: #888;
+                                margin-bottom: 5px;
+                            "
+                        >
+                            各靶位平均強度 (像素面積):
+                        </div>
+                        <div
+                            style="
+                                display: grid;
+                                grid-template-columns: repeat(3, 1fr);
+                                gap: 5px;
+                            "
+                        >
+                            <div
+                                style="
+                                    background: rgba(255, 255, 255, 0.05);
+                                    padding: 5px;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                "
+                            >
+                                <div style="font-size: 0.7em; color: #aaa">
+                                    1號
+                                </div>
+                                <div id="avg-int-1" style="color: #00d4ff">
+                                    --
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    background: rgba(255, 255, 255, 0.05);
+                                    padding: 5px;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                "
+                            >
+                                <div style="font-size: 0.7em; color: #aaa">
+                                    2號
+                                </div>
+                                <div id="avg-int-2" style="color: #00d4ff">
+                                    --
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    background: rgba(255, 255, 255, 0.05);
+                                    padding: 5px;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                "
+                            >
+                                <div style="font-size: 0.7em; color: #aaa">
+                                    3號
+                                </div>
+                                <div id="avg-int-3" style="color: #00d4ff">
+                                    --
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    background: rgba(255, 255, 255, 0.05);
+                                    padding: 5px;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                "
+                            >
+                                <div style="font-size: 0.7em; color: #aaa">
+                                    4號
+                                </div>
+                                <div id="avg-int-4" style="color: #00d4ff">
+                                    --
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    background: rgba(255, 255, 255, 0.05);
+                                    padding: 5px;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                "
+                            >
+                                <div style="font-size: 0.7em; color: #aaa">
+                                    5號
+                                </div>
+                                <div id="avg-int-5" style="color: #00d4ff">
+                                    --
+                                </div>
+                            </div>
+                            <div
+                                style="
+                                    background: rgba(255, 255, 255, 0.05);
+                                    padding: 5px;
+                                    border-radius: 3px;
+                                    text-align: center;
+                                "
+                            >
+                                <div style="font-size: 0.7em; color: #aaa">
+                                    6號
+                                </div>
+                                <div id="avg-int-6" style="color: #00d4ff">
+                                    --
+                                </div>
+                            </div>
+                        </div>
+                        <button
+                            class="btn"
+                            style="
+                                width: 100%;
+                                font-size: 0.7em;
+                                padding: 4px;
+                                margin-top: 8px;
+                                background: rgba(255, 255, 255, 0.1);
+                            "
+                            onclick="resetIntensityStats()"
+                        >
+                            清除統計
+                        </button>
+                    </div>
+
+                    <!-- 靶板調整面板 -->
+                    <div class="panel">
+                        <h2>🎯 靶板調整</h2>
+
+                        <!-- 靶板縮放 -->
+                        <div style="margin-bottom: 15px">
+                            <label
+                                style="
+                                    font-size: 0.9em;
+                                    color: #aaa;
+                                    display: flex;
+                                    justify-content: space-between;
+                                "
+                            >
+                                <span>靶板縮放:</span>
+                                <span id="scale-value" style="color: #00d4ff"
+                                    >100%</span
+                                >
+                            </label>
+                            <input
+                                type="range"
+                                id="target-scale"
+                                min="50"
+                                max="200"
+                                value="100"
+                                style="width: 100%; margin-top: 5px"
+                                oninput="updateTargetScale(this.value)"
+                            />
+                            <div
+                                style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    font-size: 0.75em;
+                                    color: #666;
+                                    margin-top: 2px;
+                                "
+                            >
+                                <span>50%</span>
+                                <span>200%</span>
+                            </div>
+                        </div>
+
+                        <!-- 垂直位置 -->
+                        <div style="margin-bottom: 15px">
+                            <label
+                                style="
+                                    font-size: 0.9em;
+                                    color: #aaa;
+                                    display: flex;
+                                    justify-content: space-between;
+                                "
+                            >
+                                <span>垂直位置:</span>
+                                <span id="vertical-value" style="color: #00d4ff"
+                                    >0%</span
+                                >
+                            </label>
+                            <input
+                                type="range"
+                                id="target-vertical"
+                                min="-20"
+                                max="20"
+                                value="0"
+                                style="width: 100%; margin-top: 5px"
+                                oninput="updateTargetVertical(this.value)"
+                            />
+                            <div
+                                style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    font-size: 0.75em;
+                                    color: #666;
+                                    margin-top: 2px;
+                                "
+                            >
+                                <span>↑ 上移</span>
+                                <span>↓ 下移</span>
+                            </div>
+                        </div>
+
+                        <!-- 水平間距 -->
+                        <div style="margin-bottom: 15px">
+                            <label
+                                style="
+                                    font-size: 0.9em;
+                                    color: #aaa;
+                                    display: flex;
+                                    justify-content: space-between;
+                                "
+                            >
+                                <span>水平間距:</span>
+                                <span id="spacing-value" style="color: #00d4ff"
+                                    >100%</span
+                                >
+                            </label>
+                            <input
+                                type="range"
+                                id="target-spacing"
+                                min="-150"
+                                max="150"
+                                value="100"
+                                style="width: 100%; margin-top: 5px"
+                                oninput="updateTargetSpacing(this.value)"
+                            />
+                            <div
+                                style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    font-size: 0.75em;
+                                    color: #666;
+                                    margin-top: 2px;
+                                "
+                            >
+                                <span>重疊</span>
+                                <span>寬鬆</span>
+                            </div>
+                        </div>
+
+                        <!-- 邊緣間距 -->
+                        <div style="margin-bottom: 15px">
+                            <label
+                                style="
+                                    font-size: 0.9em;
+                                    color: #aaa;
+                                    display: flex;
+                                    justify-content: space-between;
+                                "
+                            >
+                                <span>邊緣間距:</span>
+                                <span id="edge-value" style="color: #00d4ff"
+                                    >100%</span
+                                >
+                            </label>
+                            <input
+                                type="range"
+                                id="target-edge"
+                                min="-150"
+                                max="300"
+                                value="100"
+                                style="width: 100%; margin-top: 5px"
+                                oninput="updateTargetEdge(this.value)"
+                            />
+                            <div
+                                style="
+                                    display: flex;
+                                    justify-content: space-between;
+                                    font-size: 0.75em;
+                                    color: #666;
+                                    margin-top: 2px;
+                                "
+                            >
+                                <span>靠邊</span>
+                                <span>留白</span>
+                            </div>
+                        </div>
+
+                        <!-- 彈著修正 (歸零) -->
+                        <div
+                            style="
+                                margin-top: 20px;
+                                padding-top: 15px;
+                                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                            "
+                        >
+                            <h3
+                                style="
+                                    font-size: 0.9em;
+                                    color: #00d4ff;
+                                    margin-bottom: 10px;
+                                "
+                            >
+                                🎯 彈著修正 (歸零)
+                            </h3>
+
+                            <div style="margin-bottom: 15px">
+                                <label
+                                    style="
+                                        font-size: 0.85em;
+                                        color: #aaa;
+                                        display: flex;
+                                        justify-content: space-between;
+                                    "
+                                >
+                                    <span>左右偏移 (X):</span>
+                                    <span
+                                        id="zeroing-x-value"
+                                        style="color: #f1c40f"
+                                        >0.00</span
+                                    >
+                                </label>
+                                <input
+                                    type="range"
+                                    id="zeroing-x"
+                                    min="-1.0"
+                                    max="1.0"
+                                    step="0.01"
+                                    value="0.00"
+                                    style="width: 100%; margin-top: 5px"
+                                    oninput="updateZeroingX(this.value)"
+                                />
+                                <div
+                                    style="
+                                        display: flex;
+                                        justify-content: space-between;
+                                        font-size: 0.7em;
+                                        color: #666;
+                                    "
+                                >
+                                    <span>← 左偏</span>
+                                    <span>右偏 →</span>
+                                </div>
+                            </div>
+
+                            <div style="margin-bottom: 15px">
+                                <label
+                                    style="
+                                        font-size: 0.85em;
+                                        color: #aaa;
+                                        display: flex;
+                                        justify-content: space-between;
+                                    "
+                                >
+                                    <span>上下偏移 (Y):</span>
+                                    <span
+                                        id="zeroing-y-value"
+                                        style="color: #f1c40f"
+                                        >0.00</span
+                                    >
+                                </label>
+                                <input
+                                    type="range"
+                                    id="zeroing-y"
+                                    min="-1.0"
+                                    max="1.0"
+                                    step="0.01"
+                                    value="0.00"
+                                    style="width: 100%; margin-top: 5px"
+                                    oninput="updateZeroingY(this.value)"
+                                />
+                                <div
+                                    style="
+                                        display: flex;
+                                        justify-content: space-between;
+                                        font-size: 0.7em;
+                                        color: #666;
+                                    "
+                                >
+                                    <span>↓ 下偏</span>
+                                    <span>上偏 ↑</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 射手個別歸零與槍枝鑑定 -->
+                        <div
+                            style="
+                                margin-top: 20px;
+                                padding-top: 15px;
+                                border-top: 2px solid #f1c40f;
+                                background: rgba(241, 196, 15, 0.05);
+                                padding: 15px;
+                                border-radius: 8px;
+                            "
+                        >
+                            <h3
+                                style="
+                                    color: #f1c40f;
+                                    font-size: 0.9em;
+                                    margin-bottom: 5px;
+                                "
+                            >
+                                🔫 射手個別歸零與槍枝鑑定
+                            </h3>
+                            <p
+                                style="
+                                    font-size: 0.7em;
+                                    color: #888;
+                                    margin-bottom: 10px;
+                                "
+                            >
+                                為每把槍設定專屬的強度特徵與彈著修正。
+                            </p>
+
+                            <div
+                                style="
+                                    margin-bottom: 10px;
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 10px;
+                                "
+                            >
+                                <label
+                                    style="
+                                        font-size: 0.8em;
+                                        white-space: nowrap;
+                                    "
+                                    >選擇射手:</label
+                                >
+                                <select
+                                    id="shooter-select"
+                                    class="info-input"
+                                    style="
+                                        flex: 1;
+                                        padding: 8px;
+                                        font-size: 1em;
+                                        min-height: 36px;
+                                        background-color: #1a1a2e;
+                                        color: #00d4ff;
+                                    "
+                                    onchange="onShooterSelectChange(this.value)"
+                                >
+                                    <option
+                                        value="1"
+                                        style="
+                                            background-color: #1a1a2e;
+                                            color: #00d4ff;
+                                        "
+                                    >
+                                        1號射手 (槍枝 1)
+                                    </option>
+                                    <option
+                                        value="2"
+                                        style="
+                                            background-color: #1a1a2e;
+                                            color: #00d4ff;
+                                        "
+                                    >
+                                        2號射手 (槍枝 2)
+                                    </option>
+                                    <option
+                                        value="3"
+                                        style="
+                                            background-color: #1a1a2e;
+                                            color: #00d4ff;
+                                        "
+                                    >
+                                        3號射手 (槍枝 3)
+                                    </option>
+                                    <option
+                                        value="4"
+                                        style="
+                                            background-color: #1a1a2e;
+                                            color: #00d4ff;
+                                        "
+                                    >
+                                        4號射手 (槍枝 4)
+                                    </option>
+                                    <option
+                                        value="5"
+                                        style="
+                                            background-color: #1a1a2e;
+                                            color: #00d4ff;
+                                        "
+                                    >
+                                        5號射手 (槍枝 5)
+                                    </option>
+                                    <option
+                                        value="6"
+                                        style="
+                                            background-color: #1a1a2e;
+                                            color: #00d4ff;
+                                        "
+                                    >
+                                        6號射手 (槍枝 6)
+                                    </option>
+                                </select>
+                            </div>
+
+                            <!-- 目前距離顯示 -->
+                            <div
+                                style="
+                                    background: rgba(0, 212, 255, 0.2);
+                                    padding: 8px;
+                                    border-radius: 5px;
+                                    margin-bottom: 10px;
+                                    text-align: center;
+                                "
+                            >
+                                <span style="font-size: 0.8em; color: #aaa"
+                                    >目前編輯距離：</span
+                                >
+                                <span
+                                    id="current-zeroing-distance"
+                                    style="
+                                        font-size: 1.2em;
+                                        font-weight: bold;
+                                        color: #00d4ff;
+                                    "
+                                    >25m</span
+                                >
+                            </div>
+
+                            <div
+                                style="
+                                    background: rgba(0, 0, 0, 0.2);
+                                    padding: 10px;
+                                    border-radius: 5px;
+                                    margin-bottom: 10px;
+                                "
+                            >
+                                <div
+                                    style="
+                                        display: flex;
+                                        justify-content: space-between;
+                                        align-items: center;
+                                        margin-bottom: 8px;
+                                    "
+                                >
+                                    <span style="font-size: 0.8em"
+                                        >鑑定強度:</span
+                                    >
+                                    <div>
+                                        <span
+                                            id="shooter-target-int-display"
+                                            style="
+                                                color: #f1c40f;
+                                                font-weight: bold;
+                                            "
+                                            >--</span
+                                        >
+                                        <button
+                                            class="btn"
+                                            style="
+                                                font-size: 0.6em;
+                                                padding: 2px 5px;
+                                                margin-left: 5px;
+                                            "
+                                            onclick="captureIntensity()"
+                                        >
+                                            擷取目前值
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- 每槍最低強度門檻 -->
+                                <div
+                                    style="
+                                        margin-bottom: 8px;
+                                        padding: 8px;
+                                        background: rgba(255, 71, 87, 0.1);
+                                        border-radius: 5px;
+                                        border: 1px solid rgba(255, 71, 87, 0.3);
+                                    "
+                                >
+                                    <label
+                                        style="
+                                            font-size: 0.75em;
+                                            color: #ff4757;
+                                            display: flex;
+                                            justify-content: space-between;
+                                            align-items: center;
+                                        "
+                                    >
+                                        <span>最低強度門檻:</span>
+                                        <span
+                                            id="shooter-min-int-display"
+                                            style="font-weight: bold"
+                                            >0</span
+                                        >
+                                    </label>
+                                    <input
+                                        type="range"
+                                        id="shooter-min-int"
+                                        min="0"
+                                        max="500"
+                                        step="10"
+                                        value="0"
+                                        style="width: 100%"
+                                        oninput="updateShooterMinIntensity()"
+                                    />
+                                    <div
+                                        style="
+                                            display: flex;
+                                            justify-content: space-between;
+                                            font-size: 0.6em;
+                                            color: #888;
+                                        "
+                                    >
+                                        <span>0 (接受弱信號)</span>
+                                        <span>500 (只接受強信號)</span>
+                                    </div>
+                                    <p
+                                        style="
+                                            font-size: 0.6em;
+                                            color: #ff4757;
+                                            margin-top: 5px;
+                                        "
+                                    >
+                                        💡 1號槍信號弱？設為
+                                        0。其他槍誤判雙擊？調高此值。
+                                    </p>
+                                </div>
+
+                                <div style="margin-bottom: 8px">
+                                    <label
+                                        style="
+                                            font-size: 0.75em;
+                                            color: #aaa;
+                                            display: flex;
+                                            justify-content: space-between;
+                                        "
+                                    >
+                                        <span>個別 X 偏移:</span>
+                                        <span
+                                            id="shooter-zx-display"
+                                            style="color: #00d4ff"
+                                            >0.000</span
+                                        >
+                                    </label>
+                                    <input
+                                        type="range"
+                                        id="shooter-zx"
+                                        min="-0.5"
+                                        max="0.5"
+                                        step="0.001"
+                                        value="0"
+                                        style="width: 100%"
+                                        oninput="updateShooterZeroing()"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label
+                                        style="
+                                            font-size: 0.75em;
+                                            color: #aaa;
+                                            display: flex;
+                                            justify-content: space-between;
+                                        "
+                                    >
+                                        <span>個別 Y 偏移:</span>
+                                        <span
+                                            id="shooter-zy-display"
+                                            style="color: #00d4ff"
+                                            >0.000</span
+                                        >
+                                    </label>
+                                    <input
+                                        type="range"
+                                        id="shooter-zy"
+                                        min="-0.5"
+                                        max="0.5"
+                                        step="0.001"
+                                        value="0"
+                                        style="width: 100%"
+                                        oninput="updateShooterZeroing()"
+                                    />
+                                </div>
+                            </div>
+
+                            <div
+                                style="
+                                    display: flex;
+                                    align-items: center;
+                                    gap: 8px;
+                                "
+                            >
+                                <input
+                                    type="checkbox"
+                                    id="enable-intensity-mode"
+                                    onchange="toggleIntensityMode(this.checked)"
+                                />
+                                <label
+                                    for="enable-intensity-mode"
+                                    style="
+                                        font-size: 0.8em;
+                                        color: #f1c40f;
+                                        font-weight: bold;
+                                        cursor: pointer;
+                                    "
+                                >
+                                    啟動強度特徵自動辨識
+                                </label>
+                            </div>
+                            <p
+                                style="
+                                    font-size: 0.6em;
+                                    color: #666;
+                                    margin-top: 5px;
+                                "
+                            >
+                                ※ 啟動後，系統將不看位置，改由雷射強度判別槍枝。
+                            </p>
+                        </div>
+
+                        <!-- 全域彈著修正 (系統歸零) -->
+                        <div
+                            style="
+                                margin-top: 20px;
+                                padding-top: 15px;
+                                border-top: 2px solid #00d4ff;
+                                background: rgba(0, 212, 255, 0.05);
+                                padding: 15px;
+                                border-radius: 8px;
+                            "
+                        >
+                            <h3
+                                style="
+                                    font-size: 0.9em;
+                                    color: #00d4ff;
+                                    margin-bottom: 5px;
+                                "
+                            >
+                                🌍 全域彈著修正 (系統歸零)
+                            </h3>
+                            <p
+                                style="
+                                    font-size: 0.7em;
+                                    color: #888;
+                                    margin-bottom: 10px;
+                                "
+                            >
+                                此設定將套用到「所有」射擊模式與距離。
+                            </p>
+
+                            <div style="margin-bottom: 15px">
+                                <label
+                                    style="
+                                        font-size: 0.85em;
+                                        color: #aaa;
+                                        display: flex;
+                                        justify-content: space-between;
+                                    "
+                                >
+                                    <span>全域左右偏移 (X):</span>
+                                    <span
+                                        id="global-zeroing-x-value"
+                                        style="color: #00d4ff"
+                                        >0.00</span
+                                    >
+                                </label>
+                                <input
+                                    type="range"
+                                    id="global-zeroing-x"
+                                    min="-1.0"
+                                    max="1.0"
+                                    step="0.01"
+                                    value="0.00"
+                                    style="width: 100%; margin-top: 5px"
+                                    oninput="updateGlobalZeroingX(this.value)"
+                                />
+                            </div>
+
+                            <div style="margin-bottom: 10px">
+                                <label
+                                    style="
+                                        font-size: 0.85em;
+                                        color: #aaa;
+                                        display: flex;
+                                        justify-content: space-between;
+                                    "
+                                >
+                                    <span>全域上下偏移 (Y):</span>
+                                    <span
+                                        id="global-zeroing-y-value"
+                                        style="color: #00d4ff"
+                                        >0.00</span
+                                    >
+                                </label>
+                                <input
+                                    type="range"
+                                    id="global-zeroing-y"
+                                    min="-1.0"
+                                    max="1.0"
+                                    step="0.01"
+                                    value="0.00"
+                                    style="width: 100%; margin-top: 5px"
+                                    oninput="updateGlobalZeroingY(this.value)"
+                                />
+                            </div>
+                        </div>
+
+                        <!-- 儲存設定按鈕 -->
+                        <button
+                            class="btn btn-success"
+                            style="width: 100%; padding: 10px; margin-top: 5px"
+                            onclick="saveTargetSettings()"
+                        >
+                            💾 儲存所有調整
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 最下方：靶場操作程序指導 (SOP) -->
+            <div class="panel sop-panel">
+                <div class="sop-controls">
+                    <!-- 手動切換區 (上一動/下一動) -->
+                    <div
+                        class="sop-item"
+                        style="max-width: 250px; display: flex; gap: 5px"
+                    >
+                        <div style="flex: 1">
+                            <button
+                                class="btn btn-warning"
+                                onclick="prevSOPCommand()"
+                                style="
+                                    width: 100%;
+                                    height: 60px;
+                                    font-size: 1em;
+                                    white-space: nowrap;
+                                    padding: 5px;
+                                "
+                            >
+                                上一動
+                            </button>
+                        </div>
+                        <div style="flex: 1">
+                            <button
+                                class="btn btn-success"
+                                onclick="nextSOPCommand()"
+                                style="
+                                    width: 100%;
+                                    height: 60px;
+                                    font-size: 1em;
+                                    white-space: nowrap;
+                                    padding: 5px;
+                                "
+                            >
+                                下一個
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 目前指令 (點擊發佈並自動下一動) -->
+                    <div class="sop-item">
+                        <button
+                            id="sop-current-btn"
+                            class="sop-btn sop-btn-active"
+                            onclick="executeSOPCommand()"
+                            style="height: 80px"
+                        >
+                            下一波射手就位！
+                        </button>
+                        <span class="sop-label">【目前指令】(點擊發佈)</span>
+                    </div>
+
+                    <!-- 重複目前指令按鈕 -->
+                    <div class="sop-item" style="max-width: 140px">
+                        <button
+                            class="btn btn-primary"
+                            onclick="repeatSOPCommand()"
+                            style="
+                                width: 100%;
+                                height: 60px;
+                                font-size: 1.1em;
+                                white-space: nowrap;
+                            "
+                        >
+                            重複命令
+                        </button>
+                        <span class="sop-label">再播一次</span>
+                    </div>
+
+                    <!-- 下一個預備顯示 -->
+                    <div class="sop-item" style="max-width: 180px">
+                        <button
+                            id="sop-next-btn"
+                            class="sop-btn sop-btn-next"
+                            disabled
+                            style="height: 60px; font-size: 1em"
+                        >
+                            六發裝子彈！
+                        </button>
+                        <span class="sop-label">【下一個預備】</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <audio id="gunshot-sound-base" preload="auto">
+            <source src="gunshot.mp3" type="audio/mpeg" />
+        </audio>
+        <!-- 新增：隱藏的 SOP 播放器 -->
+        <audio id="sop-audio-player" preload="auto"></audio>
+
+        <script>
+            /* === 運作邏輯 (JavaScript) === */
+            const audioCtx = new (
+                window.AudioContext || window.webkitAudioContext
+            )();
+
+            // 音效池 (Sound Pool) - 15 聲道提高連發頻率
+            const soundPool = [];
+            const poolSize = 15;
+            for (let i = 0; i < poolSize; i++) {
+                const audio = new Audio("gunshot.mp3");
+                audio.preload = "auto";
+                soundPool.push(audio);
+            }
+            let currentPoolIdx = 0;
+
+            function playSynthGunshot() {
+                if (audioCtx.state === "suspended") audioCtx.resume();
+
+                const mainGain = audioCtx.createGain();
+                mainGain.gain.setValueAtTime(1.5, audioCtx.currentTime);
+                mainGain.connect(audioCtx.destination);
+
+                const bufferSize = audioCtx.sampleRate * 1.5;
+                const buffer = audioCtx.createBuffer(
+                    1,
+                    bufferSize,
+                    audioCtx.sampleRate,
+                );
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++)
+                    data[i] = Math.random() * 2 - 1;
+
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = "lowpass";
+                filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(
+                    100,
+                    audioCtx.currentTime + 0.15,
+                );
+
+                const envelope = audioCtx.createGain();
+                envelope.gain.setValueAtTime(1.0, audioCtx.currentTime);
+                envelope.gain.exponentialRampToValueAtTime(
+                    0.01,
+                    audioCtx.currentTime + 0.1,
+                );
+
+                const reverb = audioCtx.createGain();
+                reverb.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                reverb.gain.exponentialRampToValueAtTime(
+                    0.001,
+                    audioCtx.currentTime + 1.2,
+                );
+
+                noise.connect(filter);
+                filter.connect(envelope);
+                envelope.connect(mainGain);
+                filter.connect(reverb);
+                reverb.connect(mainGain);
+
+                noise.start();
+                noise.stop(audioCtx.currentTime + 1.5);
+            }
+
+            function playGunshotEffect() {
+                if (audioCtx.state === "suspended") audioCtx.resume();
+                const sound = soundPool[currentPoolIdx];
+                sound.currentTime = 0;
+                sound.volume = 1.0;
+                const playPromise = sound.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch((e) => playSynthGunshot());
+                }
+                currentPoolIdx = (currentPoolIdx + 1) % poolSize;
+            }
+
+            function unlockAudio() {
+                if (audioCtx.state === "suspended") audioCtx.resume();
+                playGunshotEffect();
+                soundPool.forEach((s) => s.load());
+                const btn = document.getElementById("audio-btn");
+                if (btn) {
+                    btn.style.background = "#2ecc71";
+                    btn.innerText = "✅ 音效已就緒";
+                }
+            }
+
+            // 【狀態變數】：用來存在記憶體中，目前的射擊分數與靶位狀態
+            let state = {
+                hits: [0, 0, 0, 0, 0, 0],
+                targetsDown: [false, false, false, false, false, false],
+                connected: {
+                    cameraA: false,
+                    cameraB: false,
+                    ue5: false,
+                    python: false,
+                },
+                sopIndex: 0,
+                shootingMode: "25",
+                isTrainingInProgress: false,
+                trainingTimeouts: [],
+                intensityData: [
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                ],
+                knockdownConfig: {
+                    mode: "on_hit",
+                    time_seconds: 60,
+                    shot_count: 10,
+                },
+                // 每槍在不同距離的歸零值
+                shooterZeroing: {
+                    1: {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    },
+                    2: {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    },
+                    3: {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    },
+                    4: {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    },
+                    5: {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    },
+                    6: {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    },
+                },
+                // 每槍最低強度門檻 (1號預設0，其餘預設30)
+                shooterMinIntensity: {
+                    1: 0,
+                    2: 30,
+                    3: 30,
+                    4: 30,
+                    5: 30,
+                    6: 30,
+                },
+            };
+
+            const sopSteps = [
+                "下一波射手，就位！",
+                "握射、預備！",
+                "六發裝子彈！",
+                "左線、預備！",
+                "右線、預備！",
+                "全線、預備！",
+                "開保險、開始射擊！",
+                "停止射擊！",
+                "射手起立！",
+                "向右轉，下射擊線！",
+            ];
+
+            // 口令文字 → 英文音檔對照表 (避免中文檔名編碼問題)
+            const voiceFileMap = {
+                下一波射手就位: "sop_01_ready.m4a",
+                握射預備: "sop_02_prone.m4a",
+                六發裝子彈: "sop_03_load.m4a",
+                左線預備: "sop_04_left.m4a",
+                右線預備: "sop_05_right.m4a",
+                全線預備: "sop_06_all.m4a",
+                開保險開始射擊: "sop_07_fire.m4a",
+                停止射擊: "stop_01_cease.m4a",
+                射手起立: "stop_02_stand.m4a",
+                向右轉下射擊線: "stop_03_leave.m4a",
+            };
+
+            // 反向對照：英文檔名 → 中文口令 (用於 TTS fallback)
+            const voiceFileToText = {
+                "sop_01_ready.m4a": "下一波射手，就位！",
+                "sop_02_prone.m4a": "握射、預備！",
+                "sop_03_load.m4a": "六發裝子彈！",
+                "sop_04_left.m4a": "左線、預備！",
+                "sop_05_right.m4a": "右線、預備！",
+                "sop_06_all.m4a": "全線、預備！",
+                "sop_07_fire.m4a": "開保險、開始射擊！",
+                "stop_01_cease.m4a": "停止射擊！",
+                "stop_02_stand.m4a": "射手起立！",
+                "stop_03_leave.m4a": "向右轉，下射擊線！",
+            };
+
+            let lastShotSequence = 0;
+
+            function startUpdateLoop() {
+                setInterval(async () => {
+                    try {
+                        const shotsRes = await fetch(
+                            "http://localhost:8081/shots",
+                        );
+                        if (shotsRes.ok) {
+                            const shots = await shotsRes.json();
+                            shots.forEach((shot) => {
+                                if (shot.sequence > lastShotSequence) {
+                                    handleShot(shot);
+                                    lastShotSequence = shot.sequence;
+                                }
+                            });
+                            updateConnectionStatus("python", true);
+                        }
+
+                        const stateRes = await fetch(
+                            "http://localhost:8081/state",
+                        );
+                        if (stateRes.ok) {
+                            const s = await stateRes.json();
+                            for (let i = 0; i < 6; i++) {
+                                if (s.hits[i] !== state.hits[i]) {
+                                    state.hits[i] = s.hits[i];
+                                    updateShooterDisplay(i + 1);
+                                }
+                                // 同步倒靶狀態圖像變化
+                                if (
+                                    s.targetsDown &&
+                                    s.targetsDown[i] !== state.targetsDown[i]
+                                ) {
+                                    updateTargetStatus(i + 1, s.targetsDown[i]);
+                                }
+                            }
+                            // 同步後端設定 (包括最低強度門檻)
+                            if (s.shooters && Array.isArray(s.shooters)) {
+                                s.shooters.forEach((msgShooter) => {
+                                    const id = msgShooter.id;
+                                    if (msgShooter.minIntensity !== undefined) {
+                                        state.shooterMinIntensity[id] =
+                                            msgShooter.minIntensity;
+                                    }
+                                });
+                                // 如果目前選中的是該射手，更新 UI
+                                const currentId = parseInt(
+                                    document.getElementById("shooter-select")
+                                        .value,
+                                );
+                                const minIntEl =
+                                    document.getElementById("shooter-min-int");
+                                const minIntDisplay = document.getElementById(
+                                    "shooter-min-int-display",
+                                );
+                                if (
+                                    minIntEl &&
+                                    minIntDisplay &&
+                                    state.shooterMinIntensity[currentId] !==
+                                        undefined
+                                ) {
+                                    if (document.activeElement !== minIntEl) {
+                                        // 避免使用者在拉動時被覆蓋
+                                        minIntEl.value =
+                                            state.shooterMinIntensity[
+                                                currentId
+                                            ];
+                                        minIntDisplay.textContent =
+                                            state.shooterMinIntensity[
+                                                currentId
+                                            ];
+                                    }
+                                }
+                            }
+                            updateConnectionStatus("cameraA", true);
+                            updateConnectionStatus("cameraB", true);
+                        }
+                    } catch (e) {
+                        console.warn("與後端通訊中斷:", e);
+                        updateConnectionStatus("python", false);
+                    }
+                }, 100); // 縮短輪詢間隔從 200ms 到 100ms
+            }
+
+            function updateConnectionStatus(device, connected) {
+                const dotMap = {
+                    cameraA: "conn-camera-a",
+                    cameraB: "conn-camera-b",
+                    ue5: "conn-ue5",
+                    python: "conn-python",
+                };
+                const dot = document.getElementById(dotMap[device]);
+                if (dot) {
+                    dot.className =
+                        "status-dot " +
+                        (connected
+                            ? "status-connected"
+                            : "status-disconnected");
+                }
+                state.connected[device] = connected;
+            }
+
+            function handleShot(data) {
+                playGunshotEffect();
+                const shooterId = data.shooter_id;
+
+                if (shooterId >= 1 && shooterId <= 6) {
+                    // 如果靶目前是倒下的，不予計數，也不執行命中特效
+                    if (state.targetsDown[shooterId - 1]) return;
+
+                    // 【計分判定】與後端同步的 1/10 比例剪影範圍檢查
+                    const zoneWidth = 2.0 / 6.0;
+                    const centerX = -1.0 + (shooterId - 0.5) * zoneWidth;
+                    const centerY = 0.0;
+                    const hitTolX = zoneWidth * 0.03; // 寬度容差
+                    const hitTolY = (2.0 * 0.08) / 2.0; // 高度容差
+
+                    const isValidHit =
+                        Math.abs(data.x - centerX) <= hitTolX &&
+                        Math.abs(data.y - centerY) <= hitTolY;
+
+                    if (isValidHit) {
+                        // 1. 執行命中視覺特效
+                        const card = document.getElementById(
+                            `shooter-${shooterId}`,
+                        );
+                        if (card) {
+                            card.classList.add("hit");
+                            setTimeout(() => card.classList.remove("hit"), 300);
+                        }
+
+                        // 2. 通知後端紀錄命中 (增加後端 hits[i] 數值)
+                        sendCommand("register_hit", { shooter_id: shooterId });
+
+                        // 3. 處理「立即倒靶」邏輯
+                        const config = state.knockdownConfig;
+                        if (config.mode === "on_hit") {
+                            // 中彈即倒
+                            toggleTarget(shooterId);
+                        } else if (config.mode === "on_count") {
+                            // 打滿發數倒靶 (注意：這裡是抓取目前的 hits，因 hits 可能還在同步中，所以 +1 判定)
+                            if (
+                                state.hits[shooterId - 1] + 1 >=
+                                config.shot_count
+                            ) {
+                                toggleTarget(shooterId);
+                            }
+                        }
+                    }
+
+                    // 更新信號強度監測器
+                    if (data.intensity > 0) {
+                        document.getElementById("last-intensity").textContent =
+                            data.intensity;
+                        const stats = state.intensityData[shooterId - 1];
+                        stats.count++;
+                        stats.sum += data.intensity;
+                        const avg = (stats.sum / stats.count).toFixed(1);
+                        document.getElementById(
+                            `avg-int-${shooterId}`,
+                        ).textContent = avg;
+                    }
+                }
+            }
+
+            function resetIntensityStats() {
+                state.intensityData = [
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                    { count: 0, sum: 0 },
+                ];
+                for (let i = 1; i <= 6; i++) {
+                    document.getElementById(`avg-int-${i}`).textContent = "--";
+                }
+                document.getElementById("last-intensity").textContent = "--";
+                state.lastIntensity = 0;
+            }
+
+            function onShooterSelectChange(id) {
+                const shooter = state.shooters ? state.shooters[id - 1] : null;
+                const dist = state.shootingMode;
+
+                // 更新目前編輯距離顯示
+                const distLabel = document.getElementById(
+                    "current-zeroing-distance",
+                );
+                if (distLabel) distLabel.textContent = dist + "m";
+
+                // 載入該槍在該距離的歸零值
+                const zeroing = state.shooterZeroing[id]
+                    ? state.shooterZeroing[id][dist]
+                    : null;
+                if (zeroing) {
+                    document.getElementById("shooter-zx").value =
+                        zeroing.x || 0;
+                    document.getElementById("shooter-zy").value =
+                        zeroing.y || 0;
+                    document.getElementById("shooter-zx-display").textContent =
+                        (zeroing.x || 0).toFixed(3);
+                    document.getElementById("shooter-zy-display").textContent =
+                        (zeroing.y || 0).toFixed(3);
+                } else {
+                    document.getElementById("shooter-zx").value = 0;
+                    document.getElementById("shooter-zy").value = 0;
+                    document.getElementById("shooter-zx-display").textContent =
+                        "0.000";
+                    document.getElementById("shooter-zy-display").textContent =
+                        "0.000";
+                }
+
+                // 載入鑑定強度 (不隨距離變化)
+                if (shooter) {
+                    document.getElementById(
+                        "shooter-target-int-display",
+                    ).textContent = shooter.intensity || "--";
+                }
+
+                // 載入該槍的最低強度門檻
+                const minIntEl = document.getElementById("shooter-min-int");
+                const minIntDisplay = document.getElementById(
+                    "shooter-min-int-display",
+                );
+                if (minIntEl && minIntDisplay) {
+                    const minInt = state.shooterMinIntensity[id] || 0;
+                    minIntEl.value = minInt;
+                    minIntDisplay.textContent = minInt;
+                }
+            }
+
+            function captureIntensity() {
+                const id = parseInt(
+                    document.getElementById("shooter-select").value,
+                );
+                const val = parseInt(
+                    document.getElementById("last-intensity").textContent,
+                );
+                if (!isNaN(val) && val > 0) {
+                    document.getElementById(
+                        "shooter-target-int-display",
+                    ).textContent = val;
+                    sendCommand("adjust_shooter_intensity", {
+                        shooterId: id,
+                        intensity: val,
+                    });
+                    if (state.shooters) state.shooters[id - 1].intensity = val;
+                } else {
+                    alert("請先對投影幕射擊一次以擷取強度！");
+                }
+            }
+
+            function updateShooterZeroing() {
+                const id = parseInt(
+                    document.getElementById("shooter-select").value,
+                );
+                const dist = state.shootingMode;
+                const zx = parseFloat(
+                    document.getElementById("shooter-zx").value,
+                );
+                const zy = parseFloat(
+                    document.getElementById("shooter-zy").value,
+                );
+
+                document.getElementById("shooter-zx-display").textContent =
+                    zx.toFixed(3);
+                document.getElementById("shooter-zy-display").textContent =
+                    zy.toFixed(3);
+
+                // 儲存到本地狀態 (按距離)
+                if (!state.shooterZeroing[id]) {
+                    state.shooterZeroing[id] = {
+                        25: { x: 0, y: 0 },
+                        75: { x: 0, y: 0 },
+                        175: { x: 0, y: 0 },
+                        300: { x: 0, y: 0 },
+                    };
+                }
+                state.shooterZeroing[id][dist] = { x: zx, y: zy };
+
+                // 發送到後端
+                sendCommand("adjust_shooter_zeroing", {
+                    shooterId: id,
+                    distance: dist,
+                    zeroingX: zx,
+                    zeroingY: zy,
+                });
+
+                // 儲存到 localStorage
+                localStorage.setItem(
+                    "shooterZeroing",
+                    JSON.stringify(state.shooterZeroing),
+                );
+            }
+
+            function updateShooterMinIntensity() {
+                const id = parseInt(
+                    document.getElementById("shooter-select").value,
+                );
+                const minInt = parseInt(
+                    document.getElementById("shooter-min-int").value,
+                );
+
+                document.getElementById("shooter-min-int-display").textContent =
+                    minInt;
+                state.shooterMinIntensity[id] = minInt;
+
+                sendCommand("set_shooter_min_intensity", {
+                    shooterId: id,
+                    minIntensity: minInt,
+                });
+                localStorage.setItem(
+                    "shooterMinIntensity",
+                    JSON.stringify(state.shooterMinIntensity),
+                );
+                console.log(`${id}號槍最低強度門檻設為: ${minInt}`);
+            }
+
+            function loadShooterSettingsFromLocalStorage() {
+                // 載入歸零資料
+                const savedZeroing = localStorage.getItem("shooterZeroing");
+                if (savedZeroing) {
+                    try {
+                        const data = JSON.parse(savedZeroing);
+                        for (let id = 1; id <= 6; id++) {
+                            if (data[id]) state.shooterZeroing[id] = data[id];
+                        }
+                        console.log("已從本地載入射手歸零資料");
+                    } catch (e) {
+                        console.warn("載入歸零資料失敗:", e);
+                    }
+                }
+
+                // 載入最低強度門檻 (暫時跳過 localStorage 以強制載入新預設值 30)
+                /*
+            const savedMinInt = localStorage.getItem('shooterMinIntensity');
+            if (savedMinInt) {
+                try {
+                    const data = JSON.parse(savedMinInt);
+                    for (let id = 1; id <= 6; id++) {
+                        if (data[id] !== undefined) state.shooterMinIntensity[id] = data[id];
+                    }
+                    console.log('已從本地載入最低強度門檻');
+                } catch (e) { console.warn('載入最低強度門檻失敗:', e); }
+            }
+            */
+            }
+
+            function toggleIntensityMode(enabled) {
+                sendCommand("enable_intensity_id", { enabled: enabled });
+            }
+
+            function updateShooterDisplay(shooterId) {
+                const el = document.getElementById(`hits-${shooterId}`);
+                if (el) el.textContent = state.hits[shooterId - 1];
+            }
+
+            function updateTargetStatus(shooterId, isDown) {
+                state.targetsDown[shooterId - 1] = isDown;
+                const statusEl = document.getElementById(`status-${shooterId}`);
+                const imgEl = document.getElementById(
+                    `target-img-${shooterId}`,
+                );
+                const btnEl = document.getElementById(
+                    `target-btn-${shooterId}`,
+                );
+
+                if (statusEl) {
+                    if (isDown) {
+                        statusEl.className = "shooter-status status-down";
+                        statusEl.textContent = "○ 倒靶";
+                        if (imgEl) imgEl.classList.add("img-knocked");
+                        if (btnEl) {
+                            btnEl.classList.remove("standing");
+                            btnEl.classList.add("knocked");
+                            btnEl.textContent = "起靶";
+                        }
+                    } else {
+                        statusEl.className = "shooter-status status-up";
+                        statusEl.textContent = "● 立靶";
+                        if (imgEl) imgEl.classList.remove("img-knocked");
+                        if (btnEl) {
+                            btnEl.classList.remove("knocked");
+                            btnEl.classList.add("standing");
+                            btnEl.textContent = "倒靶";
+                        }
+                    }
+                }
+            }
+
+            function knockdownAll() {
+                for (let i = 1; i <= 6; i++) updateTargetStatus(i, true);
+                sendCommand("knockdown_all");
+            }
+
+            function resetAll() {
+                for (let i = 1; i <= 6; i++) updateTargetStatus(i, false);
+                sendCommand("reset_all");
+            }
+
+            function resetHits() {
+                state.hits = [0, 0, 0, 0, 0, 0];
+                for (let i = 1; i <= 6; i++) updateShooterDisplay(i);
+                sendCommand("reset_hits");
+            }
+
+            // 個別射手倒靶/起靶切換
+            async function toggleTarget(shooterId) {
+                const btn = document.getElementById(`target-btn-${shooterId}`);
+                if (!btn) return;
+
+                const isStanding = btn.classList.contains("standing");
+
+                if (isStanding) {
+                    // 目前立靶，執行倒靶
+                    await sendCommand("knockdown_target", {
+                        shooter_id: shooterId,
+                    });
+                    updateTargetStatus(shooterId, true); // 同步更新 UI 圖像為轉靶狀態
+                } else {
+                    // 目前倒靶，執行起靶
+                    await sendCommand("reset_target", {
+                        shooter_id: shooterId,
+                    });
+                    updateTargetStatus(shooterId, false); // 同步更新 UI 圖像為立靶狀態
+                }
+            }
+
+            function startCalibration() {
+                if (
+                    confirm(
+                        "確定要手動校準嗎？\n\n請先開啟 calibration_grid.html 並全螢幕顯示在投影幕上。",
+                    )
+                ) {
+                    sendCommand("start_calibration");
+                    alert(
+                        "校準啟動！\n\n請依序射擊投影幕的：\n1. 左上角\n2. 右上角\n3. 右下角\n4. 左下角\n\n每個點之間間隔約 1 秒。",
+                    );
+                }
+            }
+
+            async function startAutoCalibrationA() {
+                if (confirm("確定要自動校準 Camera A（左側/靶位 1-2-3）嗎？\n\n請確認：\n✓ 棋盤格已貼在投影幕 A 上\n✓ 棋盤格平整無皺褶\n✓ 光線充足")) {
+                    try {
+                        const response = await sendCommand("start_auto_calibration_a");
+                        if (response && response.status === "ok") {
+                            alert("✅ Camera A 自動校準成功！\n\n可以移除棋盤格了。");
+                        } else {
+                            alert("❌ Camera A 自動校準失敗\n\n請檢查：\n• 棋盤格是否完整可見\n• 光線是否充足\n• 棋盤格是否平整");
+                        }
+                    } catch (error) {
+                        alert("❌ 校準失敗：" + error.message);
+                    }
+                }
+            }
+
+            async function startAutoCalibrationB() {
+                if (confirm("確定要自動校準 Camera B（右側/靶位 4-5-6）嗎？\n\n請確認：\n✓ 棋盤格已貼在投影幕 B 上\n✓ 棋盤格平整無皺褶\n✓ 光線充足")) {
+                    try {
+                        const response = await sendCommand("start_auto_calibration_b");
+                        if (response && response.status === "ok") {
+                            alert("✅ Camera B 自動校準成功！\n\n可以移除棋盤格了。");
+                        } else {
+                            alert("❌ Camera B 自動校準失敗\n\n請檢查：\n• 棋盤格是否完整可見\n• 光線是否充足\n• 棋盤格是否平整");
+                        }
+                    } catch (error) {
+                        alert("❌ 校準失敗：" + error.message);
+                    }
+                }
+            }
+
+            async function setShootingMode(mode) {
+                state.shootingMode = mode;
+                const modes = ["25", "75", "175", "300"];
+                modes.forEach((m) => {
+                    const btn = document.getElementById(`mode-${m}`);
+                    if (btn) btn.classList.remove("mode-btn-active");
+                });
+                const activeBtn = document.getElementById(`mode-${mode}`);
+                if (activeBtn) activeBtn.classList.add("mode-btn-active");
+                await sendCommand("change_mode", { mode: mode });
+
+                // 切換模式後從後端載入新環境的靶板設定
+                try {
+                    const res = await fetch("http://localhost:8081/state");
+                    if (res.ok) {
+                        const stateData = await res.json();
+                        if (stateData.targetAdjustments) {
+                            const adj = stateData.targetAdjustments;
+                            document.getElementById("target-scale").value =
+                                (adj.scale || 1) * 100;
+                            document.getElementById("target-vertical").value =
+                                (adj.vertical || 0) * 100;
+                            document.getElementById("target-spacing").value =
+                                (adj.spacing || 1) * 100;
+                            document.getElementById("target-edge").value =
+                                (adj.edgePadding || 1) * 100;
+
+                            // 載入彈著修正
+                            document.getElementById("zeroing-x").value =
+                                adj.zeroingX || 0;
+                            document.getElementById("zeroing-y").value =
+                                adj.zeroingY || 0;
+
+                            updateTargetScale(
+                                document.getElementById("target-scale").value,
+                            );
+                            updateTargetVertical(
+                                document.getElementById("target-vertical")
+                                    .value,
+                            );
+                            updateTargetSpacing(
+                                document.getElementById("target-spacing").value,
+                            );
+                            updateTargetEdge(
+                                document.getElementById("target-edge").value,
+                            );
+                            updateZeroingX(
+                                document.getElementById("zeroing-x").value,
+                            );
+                            updateZeroingY(
+                                document.getElementById("zeroing-y").value,
+                            );
+                            console.log(
+                                "已載入環境設定:",
+                                stateData.environment,
+                            );
+                        }
+                    }
+                } catch (e) {
+                    console.warn("載入環境設定失敗:", e);
+                }
+
+                // 切換模式後更新射手歸零顯示 (載入該距離的歸零值)
+                const currentShooter =
+                    document.getElementById("shooter-select").value;
+                onShooterSelectChange(currentShooter);
+            }
+
+            async function applySettings() {
+                const weather = document.querySelector(
+                    'input[name="weather"]:checked',
+                );
+                const time = document.querySelector(
+                    'input[name="time"]:checked',
+                );
+                const knockdown = document.querySelector(
+                    'input[name="knockdown"]:checked',
+                );
+
+                const kdMode = knockdown ? knockdown.value : "on_hit";
+                const kdTime =
+                    parseInt(document.getElementById("kd-time-value").value) ||
+                    60;
+                const kdCount =
+                    parseInt(document.getElementById("kd-count-value").value) ||
+                    10;
+
+                state.knockdownConfig = {
+                    mode: kdMode,
+                    time_seconds: kdTime,
+                    shot_count: kdCount,
+                };
+
+                const settings = {
+                    weather: weather ? weather.value : "sunny",
+                    time: time ? time.value : "day",
+                    distance: state.shootingMode || "25",
+                    knockdown: state.knockdownConfig,
+                };
+                await sendCommand("apply_settings", settings);
+
+                // 切換環境後，從後端載入新環境的靶板設定並更新 UI
+                try {
+                    const res = await fetch("http://localhost:8081/state");
+                    if (res.ok) {
+                        const stateData = await res.json();
+                        if (stateData.targetAdjustments) {
+                            const adj = stateData.targetAdjustments;
+                            // 更新滑桿值（後端儲存的值是 0-1 或 -0.2~0.2 的比例）
+                            document.getElementById("target-scale").value =
+                                (adj.scale || 1) * 100;
+                            document.getElementById("target-vertical").value =
+                                (adj.vertical || 0) * 100;
+                            document.getElementById("target-spacing").value =
+                                (adj.spacing || 1) * 100;
+                            document.getElementById("target-edge").value =
+                                (adj.edgePadding || 1) * 100;
+
+                            // 載入彈著修正
+                            document.getElementById("zeroing-x").value =
+                                adj.zeroingX || 0;
+                            document.getElementById("zeroing-y").value =
+                                adj.zeroingY || 0;
+
+                            // 更新顯示標籤
+                            updateTargetScale(
+                                document.getElementById("target-scale").value,
+                            );
+                            updateTargetVertical(
+                                document.getElementById("target-vertical")
+                                    .value,
+                            );
+                            updateTargetSpacing(
+                                document.getElementById("target-spacing").value,
+                            );
+                            updateTargetEdge(
+                                document.getElementById("target-edge").value,
+                            );
+                            updateZeroingX(
+                                document.getElementById("zeroing-x").value,
+                            );
+                            updateZeroingY(
+                                document.getElementById("zeroing-y").value,
+                            );
+                            console.log(
+                                "已載入環境設定:",
+                                stateData.environment,
+                            );
+                        }
+                    }
+                } catch (e) {
+                    console.warn("載入環境設定失敗:", e);
+                }
+            }
+
+            function saveResults() {
+                const batch = document.getElementById("session-batch").value;
+                const company =
+                    document.getElementById("session-company").value;
+                const squad = document.getElementById("session-squad").value;
+                const modeKey = state.shootingMode || "25";
+                const modeName = {
+                    25: "25公尺射擊",
+                    75: "75公尺射擊",
+                    175: "175公尺射擊",
+                    300: "300公尺射擊",
+                    dynamic: "動態射擊模式",
+                }[modeKey];
+
+                const sessionInfo = {
+                    batch: batch,
+                    company: company,
+                    squad: squad,
+                    mode: modeKey,
+                    timestamp: new Date().toISOString(),
+                };
+
+                const shooterResults = [];
+                const excelData = [];
+
+                // Excel 標題列：梯次、連隊、班別、編號、姓名、射擊課目、成績
+                excelData.push([
+                    "梯次",
+                    "連隊",
+                    "班別",
+                    "編號",
+                    "姓名",
+                    "射擊課目",
+                    "成績",
+                ]);
+
+                for (let i = 1; i <= 6; i++) {
+                    const name =
+                        document.getElementById(`name-${i}`).value ||
+                        `射手${i}`;
+                    const score = state.hits[i - 1];
+
+                    shooterResults.push({ id: i, name: name, score: score });
+
+                    // Excel 內容行
+                    excelData.push([
+                        batch,
+                        company,
+                        squad,
+                        i,
+                        name,
+                        modeName,
+                        score,
+                    ]);
+                }
+
+                // 1. 下載 Excel 檔案
+                try {
+                    const ws = XLSX.utils.aoa_to_sheet(excelData);
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "射擊成績");
+
+                    // 檔名設定：射擊成績_梯次_連隊_班別_日期.xlsx
+                    const now = new Date();
+                    const dateStr = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}_${String(now.getHours()).padStart(2, "0")}${String(now.getMinutes()).padStart(2, "0")}`;
+                    const fileName = `射擊成績_${batch}_${company}_${squad}_${dateStr}.xlsx`;
+
+                    XLSX.writeFile(wb, fileName);
+                } catch (e) {
+                    console.error("Excel 產生失敗:", e);
+                    alert("Excel 檔案產生失敗，請檢查網路連線或瀏覽器權限。");
+                }
+
+                // 2. 上傳至後端 (原始邏輯保留)
+                sendCommand("save_results", {
+                    session: sessionInfo,
+                    results: shooterResults,
+                });
+
+                const txt = document.getElementById("training-status-text");
+                const box = document.getElementById("training-status-box");
+                if (box) box.style.display = "block";
+                if (txt) {
+                    txt.textContent =
+                        "✅ 成績已上傳資料庫並同步下載成 Excel 檔案";
+                    txt.style.color = "#2ed573";
+                }
+                console.log("成績已完成上傳與 Excel 匯出");
+            }
+
+            function updateThreshold(val) {
+                document.getElementById("threshold-val").textContent = val;
+                sendCommand("update_threshold", { threshold: parseInt(val) });
+            }
+
+            async function sendCommand(action, data = {}) {
+                try {
+                    const response = await fetch(
+                        "http://localhost:8081/command",
+                        {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                type: "command",
+                                action,
+                                data,
+                                timestamp: Date.now(),
+                            }),
+                        },
+                    );
+                    return await response.json();
+                } catch (error) {
+                    console.error("指令發送失敗:", error);
+                }
+            }
+
+            // ========== 靶板調整功能 ==========
+            function updateTargetScale(value) {
+                document.getElementById("scale-value").textContent =
+                    value + "%";
+                sendTargetAdjustment();
+            }
+
+            function updateTargetVertical(value) {
+                const sign = value >= 0 ? "+" : "";
+                document.getElementById("vertical-value").textContent =
+                    sign + value + "%";
+                sendTargetAdjustment();
+            }
+
+            function updateTargetSpacing(value) {
+                document.getElementById("spacing-value").textContent =
+                    value + "%";
+                sendTargetAdjustment();
+            }
+
+            function updateTargetEdge(value) {
+                document.getElementById("edge-value").textContent = value + "%";
+                sendTargetAdjustment();
+            }
+
+            function updateZeroingX(value) {
+                document.getElementById("zeroing-x-value").textContent =
+                    parseFloat(value).toFixed(2);
+                sendTargetAdjustment();
+            }
+
+            function updateZeroingY(value) {
+                document.getElementById("zeroing-y-value").textContent =
+                    parseFloat(value).toFixed(2);
+                sendTargetAdjustment();
+            }
+
+            function updateGlobalZeroingX(value) {
+                document.getElementById("global-zeroing-x-value").textContent =
+                    parseFloat(value).toFixed(2);
+                sendGlobalZeroing();
+            }
+
+            function updateGlobalZeroingY(value) {
+                document.getElementById("global-zeroing-y-value").textContent =
+                    parseFloat(value).toFixed(2);
+                sendGlobalZeroing();
+            }
+
+            function sendGlobalZeroing() {
+                const zx = parseFloat(
+                    document.getElementById("global-zeroing-x").value,
+                );
+                const zy = parseFloat(
+                    document.getElementById("global-zeroing-y").value,
+                );
+
+                // 立即發送調整到後端
+                sendCommand("adjust_global_zeroing", {
+                    zeroingX: zx,
+                    zeroingY: zy,
+                });
+
+                // 延遲自動儲存（1 秒後）
+                clearTimeout(saveGlobalZeroingTimer);
+                saveGlobalZeroingTimer = setTimeout(() => {
+                    autoSaveTargetSettings();
+                }, 1000);
+            }
+
+            // 調整計時器，避免滑桿拖動時頻繁儲存
+            let saveAdjustmentTimer = null;
+            let saveGlobalZeroingTimer = null;
+
+            function sendTargetAdjustment() {
+                const scale =
+                    parseFloat(document.getElementById("target-scale").value) /
+                    100;
+                const vertical =
+                    parseFloat(
+                        document.getElementById("target-vertical").value,
+                    ) / 100;
+                const spacing =
+                    parseFloat(
+                        document.getElementById("target-spacing").value,
+                    ) / 100;
+                const edge =
+                    parseFloat(document.getElementById("target-edge").value) /
+                    100;
+                const zx = parseFloat(
+                    document.getElementById("zeroing-x").value,
+                );
+                const zy = parseFloat(
+                    document.getElementById("zeroing-y").value,
+                );
+
+                // 立即發送調整到後端（即時更新畫面）
+                sendCommand("adjust_targets", {
+                    scale: scale,
+                    vertical: vertical,
+                    spacing: spacing,
+                    edgePadding: edge,
+                    zeroingX: zx,
+                    zeroingY: zy,
+                });
+
+                // 延遲儲存：使用者停止拖動 1 秒後自動儲存
+                // 避免滑桿拖動時每次都儲存（太頻繁）
+                clearTimeout(saveAdjustmentTimer);
+                saveAdjustmentTimer = setTimeout(() => {
+                    autoSaveTargetSettings();
+                }, 1000); // 1 秒後自動儲存
+            }
+
+            // 自動儲存函數（靜默儲存，不跳提示）
+            function autoSaveTargetSettings() {
+                // 儲存到瀏覽器 localStorage
+                const settings = {
+                    scale: document.getElementById("target-scale").value,
+                    vertical: document.getElementById("target-vertical").value,
+                    spacing: document.getElementById("target-spacing").value,
+                    edge: document.getElementById("target-edge").value,
+                    zeroingX: document.getElementById("zeroing-x").value,
+                    zeroingY: document.getElementById("zeroing-y").value,
+                };
+                localStorage.setItem(
+                    "targetSettings",
+                    JSON.stringify(settings),
+                );
+
+                // 同時發送到後端儲存到 JSON 檔案
+                sendCommand("save_target_settings");
+
+                console.log("✅ 靶板設定已自動儲存");
+            }
+
+            function saveTargetSettings() {
+                const settings = {
+                    scale: document.getElementById("target-scale").value,
+                    vertical: document.getElementById("target-vertical").value,
+                    spacing: document.getElementById("target-spacing").value,
+                    edge: document.getElementById("target-edge").value,
+                    zeroingX: document.getElementById("zeroing-x").value,
+                    zeroingY: document.getElementById("zeroing-y").value,
+                };
+
+                // 儲存到瀏覽器 localStorage
+                localStorage.setItem(
+                    "targetSettings",
+                    JSON.stringify(settings),
+                );
+
+                // 同時發送到後端儲存到 JSON 檔案
+                sendCommand("save_target_settings");
+
+                alert("✅ 靶板設定已儲存！下次啟動時會自動套用。");
+            }
+
+            async function loadTargetSettings() {
+                // 從後端載入當前環境的靶板設定
+                try {
+                    const res = await fetch("http://localhost:8081/state");
+                    if (res.ok) {
+                        const stateData = await res.json();
+                        if (stateData.targetAdjustments) {
+                            const adj = stateData.targetAdjustments;
+                            document.getElementById("target-scale").value =
+                                (adj.scale || 1) * 100;
+                            document.getElementById("target-vertical").value =
+                                (adj.vertical || 0) * 100;
+                            document.getElementById("target-spacing").value =
+                                (adj.spacing || 1) * 100;
+                            document.getElementById("target-edge").value =
+                                (adj.edgePadding || 1) * 100;
+
+                            document.getElementById("zeroing-x").value =
+                                adj.zeroingX || 0;
+                            document.getElementById("zeroing-y").value =
+                                adj.zeroingY || 0;
+
+                            // 載入全域歸零
+                            if (stateData.globalZeroingX !== undefined) {
+                                document.getElementById(
+                                    "global-zeroing-x",
+                                ).value = stateData.globalZeroingX;
+                                document.getElementById(
+                                    "global-zeroing-x-value",
+                                ).textContent = parseFloat(
+                                    stateData.globalZeroingX,
+                                ).toFixed(2);
+                            }
+                            if (stateData.globalZeroingY !== undefined) {
+                                document.getElementById(
+                                    "global-zeroing-y",
+                                ).value = stateData.globalZeroingY;
+                                document.getElementById(
+                                    "global-zeroing-y-value",
+                                ).textContent = parseFloat(
+                                    stateData.globalZeroingY,
+                                ).toFixed(2);
+                            }
+
+                            // 載入射手個別設定
+                            if (stateData.shooters) {
+                                state.shooters = stateData.shooters;
+                                onShooterSelectChange(
+                                    document.getElementById("shooter-select")
+                                        .value,
+                                );
+                            }
+                            if (stateData.useIntensityId !== undefined) {
+                                document.getElementById(
+                                    "enable-intensity-mode",
+                                ).checked = stateData.useIntensityId;
+                            }
+
+                            updateTargetScale(
+                                document.getElementById("target-scale").value,
+                            );
+                            updateTargetVertical(
+                                document.getElementById("target-vertical")
+                                    .value,
+                            );
+                            updateTargetSpacing(
+                                document.getElementById("target-spacing").value,
+                            );
+                            updateTargetEdge(
+                                document.getElementById("target-edge").value,
+                            );
+                            updateZeroingX(
+                                document.getElementById("zeroing-x").value,
+                            );
+                            updateZeroingY(
+                                document.getElementById("zeroing-y").value,
+                            );
+
+                            console.log(
+                                "已載入後端靶板設定 (環境:",
+                                stateData.environment + ")",
+                            );
+                        }
+                    }
+                } catch (e) {
+                    console.warn("無法載入後端設定，後端可能尚未啟動:", e);
+                }
+            }
+
+            function resetTargetAdjustments() {
+                document.getElementById("target-scale").value = 100;
+                document.getElementById("target-vertical").value = 0;
+                document.getElementById("target-spacing").value = 100;
+                document.getElementById("target-edge").value = 100;
+                document.getElementById("zeroing-x").value = 0;
+                document.getElementById("zeroing-y").value = 0;
+
+                document.getElementById("scale-value").textContent = "100%";
+                document.getElementById("vertical-value").textContent = "0%";
+                document.getElementById("spacing-value").textContent = "100%";
+                document.getElementById("edge-value").textContent = "100%";
+                document.getElementById("zeroing-x-value").textContent = "0.00";
+                document.getElementById("zeroing-y-value").textContent = "0.00";
+
+                sendTargetAdjustment();
+            }
+
+            function executeSOPCommand() {
+                const currentCmd = sopSteps[state.sopIndex];
+                speakCommand(currentCmd);
+                const currentBtn = document.getElementById("sop-current-btn");
+                if (currentBtn) {
+                    currentBtn.classList.remove("sop-btn-active");
+                    currentBtn.classList.add("sop-btn-done");
+                }
+                setTimeout(() => {
+                    state.sopIndex = (state.sopIndex + 1) % sopSteps.length;
+                    updateSOPDisplay();
+                }, 800);
+            }
+
+            function prevSOPCommand() {
+                state.sopIndex =
+                    (state.sopIndex - 1 + sopSteps.length) % sopSteps.length;
+                updateSOPDisplay();
+            }
+
+            function nextSOPCommand() {
+                state.sopIndex = (state.sopIndex + 1) % sopSteps.length;
+                updateSOPDisplay();
+            }
+
+            function repeatSOPCommand() {
+                speakCommand(sopSteps[state.sopIndex]);
+            }
+
+            function updateSOPDisplay() {
+                const currentBtn = document.getElementById("sop-current-btn");
+                const nextBtn = document.getElementById("sop-next-btn");
+                if (currentBtn) {
+                    currentBtn.textContent = sopSteps[state.sopIndex];
+                    currentBtn.className = "sop-btn sop-btn-active";
+                }
+                if (nextBtn) {
+                    nextBtn.textContent =
+                        sopSteps[(state.sopIndex + 1) % sopSteps.length];
+                }
+            }
+
+            let lastSpeakTime = 0;
+            function speakCommand(text) {
+                const now = Date.now();
+                if (now - lastSpeakTime < 500) return; // 防止半秒內重複觸發
+                lastSpeakTime = now;
+
+                // 清理口令文字 (移除標點符號)
+                let cleanText = text.replace(/[！,，!。、]/g, "").trim();
+
+                // 智慧別名映射
+                if (cleanText === "開保險" || cleanText === "開始射擊") {
+                    cleanText = "開保險開始射擊";
+                }
+
+                // 從對照表取得對應的英文音檔名
+                const audioFileName = voiceFileMap[cleanText];
+
+                if (!audioFileName) {
+                    console.warn(`[語音] 找不到口令對應音檔: ${cleanText}`);
+                    // 備援：使用 TTS
+                    if ("speechSynthesis" in window) {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.lang = "zh-TW";
+                        utterance.rate = 1.15;
+                        utterance.pitch = 0.45;
+                        window.speechSynthesis.speak(utterance);
+                    }
+                    return;
+                }
+
+                // 播放對應的音檔
+                const audioPath = `./voice/${audioFileName}`;
+                const audio = new Audio(audioPath);
+
+                audio.oncanplaythrough = () => {
+                    if (audioCtx.state === "suspended") audioCtx.resume();
+                    audio.play().catch((e) => {
+                        console.error(`[語音] 播放失敗: ${audioPath}`, e);
+                    });
+                    console.log(`[語音] 播放: ${audioPath}`);
+                };
+
+                audio.onerror = (e) => {
+                    console.error(`[語音] 載入失敗: ${audioPath}`, e);
+                    // 備援：使用 TTS
+                    if ("speechSynthesis" in window) {
+                        window.speechSynthesis.cancel();
+                        const utterance = new SpeechSynthesisUtterance(text);
+                        utterance.lang = "zh-TW";
+                        utterance.rate = 1.15;
+                        utterance.pitch = 0.45;
+                        window.speechSynthesis.speak(utterance);
+                        console.log(`[TTS 備援] ${text}`);
+                    }
+                };
+            }
+
+            // 調試用：顯示系統所有可用語音
+            function logAvailableVoices() {
+                if ("speechSynthesis" in window) {
+                    const voices = window.speechSynthesis.getVoices();
+                    console.log("=== 系統可用語音清單 ===");
+                    voices.forEach((v, i) => {
+                        console.log(
+                            `${i}: ${v.name} (${v.lang}) ${v.default ? "[預設]" : ""}`,
+                        );
+                    });
+                }
+            }
+            window.speechSynthesis.onvoiceschanged = logAvailableVoices;
+
+            async function startTraining() {
+                if (state.isTrainingInProgress) return;
+                state.isTrainingInProgress = true;
+                state.trainingTimeouts = [];
+
+                resetHits();
+
+                const modeName = {
+                    25: "25公尺射擊",
+                    75: "75公尺射擊",
+                    175: "175公尺射擊",
+                    300: "300公尺射擊",
+                    dynamic: "動態射擊模式",
+                }[state.shootingMode || "25"];
+                const box = document.getElementById("training-status-box");
+                const txt = document.getElementById("training-status-text");
+                if (box) box.style.display = "block";
+                if (txt)
+                    txt.textContent = `模式：${modeName} 執行自動口令中...`;
+
+                if (audioCtx.state === "suspended") {
+                    audioCtx.resume();
+                }
+
+                console.log("[System] Starting SOP Sequence...");
+
+                // 執行 SOP 語音流程 (await 確保播完才會開始計分)
+                await runSOPSequence(modeName);
+
+                // 如果在播放途中被停止 (例如使用者按了停止)，則不再繼續
+                if (!state.isTrainingInProgress) {
+                    console.log("[System] Training stopped during SOP.");
+                    return;
+                }
+
+                // SOP 結束，開始計分
+                sendCommand("start_scoring");
+                console.log("[System] SOP Complete. Scoring started.");
+
+                if (txt) {
+                    txt.textContent = `訓練中 - ${modeName} (計分開始)`;
+                    txt.style.color = "#2ed573";
+                }
+
+                // 定時倒靶邏輯
+                if (
+                    state.knockdownConfig &&
+                    state.knockdownConfig.mode === "on_time"
+                ) {
+                    const waitTime = state.knockdownConfig.time_seconds * 1000;
+                    const tidKnockdown = setTimeout(() => {
+                        knockdownAll();
+                        if (txt) txt.textContent = "時間到 - 停止射擊";
+                    }, waitTime);
+                    state.trainingTimeouts.push(tidKnockdown);
+                }
+            }
+
+            async function stopTraining() {
+                // 清除所有正在排隊的語音命令
+                state.trainingTimeouts.forEach((tid) => clearTimeout(tid));
+                state.trainingTimeouts = [];
+                state.isTrainingInProgress = false;
+
+                // 立即停止正在播放的音軌 (如有)
+                if (state.currentAudio) {
+                    state.currentAudio.pause();
+                    state.currentAudio.currentTime = 0;
+                }
+
+                // 立即停止計分
+                sendCommand("stop_scoring");
+
+                const txt = document.getElementById("training-status-text");
+                if (txt) {
+                    txt.textContent = "停止射擊程序執行中...";
+                    txt.style.color = "#ff4757";
+                }
+
+                // 1. 停止射擊
+                await playVoiceCommand("stop_01_cease.m4a");
+                await new Promise((r) => setTimeout(r, 1000));
+
+                // 2. 射手起立
+                await playVoiceCommand("stop_02_stand.m4a");
+                await new Promise((r) => setTimeout(r, 1000));
+
+                // 3. 向右轉，下射擊線
+                await playVoiceCommand("stop_03_leave.m4a");
+
+                // 4. 結束狀態更新
+                const box = document.getElementById("training-status-box");
+                if (txt) {
+                    txt.textContent = "訓練已停止，請存檔成績";
+                    txt.style.color = "#00d4ff";
+                }
+
+                // 更換按鈕功能與顏色
+                const btnLeft = document.getElementById("training-start-btn");
+                const btnRight = document.getElementById("training-stop-btn");
+
+                if (btnLeft) {
+                    btnLeft.textContent = "上傳成績";
+                    btnLeft.className = "btn btn-primary"; // 藍色
+                    btnLeft.onclick = saveResults;
+                }
+                if (btnRight) {
+                    btnRight.textContent = "重新畫面";
+                    btnRight.className = "btn btn-success"; // 綠色
+                    btnRight.onclick = () => window.location.reload();
+                }
+                if (txt) txt.textContent = "請選擇「上傳成績」或「重新畫面」";
+            }
+
+            document.addEventListener("DOMContentLoaded", () => {
+                // 點擊任意處啟動音效 (解決瀏覽器限制)
+                document.addEventListener("click", () => {
+                    if (audioCtx.state === "suspended") audioCtx.resume();
+                });
+
+                // 載入射手設定
+                loadShooterSettingsFromLocalStorage();
+
+                startUpdateLoop();
+                updateSOPDisplay();
+
+                // 初始化射手選擇顯示
+                onShooterSelectChange(
+                    document.getElementById("shooter-select").value,
+                );
+            });
+            async function shutdownSystem() {
+                if (!confirm("確定要完全結束並關閉 T91 系統嗎？")) return;
+
+                try {
+                    // 嘗試通知後端進行系統級清理 (關閉 Chrome, 卸載磁碟)
+                    const res = await fetch("http://127.0.0.1:8081/command", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ action: "shutdown_system" }),
+                    });
+
+                    if (!res.ok) {
+                        throw new Error("後端回傳錯誤: " + res.status);
+                    }
+
+                    // 無論後端是否有回傳 OK (可能還沒更新)，我們都嘗試關閉視窗
+                    window.close();
+                } catch (e) {
+                    console.error("關閉請求失敗:", e);
+                    // 某些瀏覽器不允許 JavaScript 關閉非 script 開啟的視窗
+                    alert(
+                        "❌ 結束系統失敗！\n\n無法連接到後端 (t91_tracker.exe)。\n請手動關閉所有視窗與程式。\n\n錯誤訊息: " +
+                            e.message,
+                    );
+                }
+            }
+
+            function testAudio() {
+                alert("測試開始！將嘗試播放 射擊訓練口令腳本.m4a...");
+                const audio = new Audio("射擊訓練口令腳本.m4a");
+                audio
+                    .play()
+                    .then(() => {
+                        alert(
+                            "✅ 音效播放成功！如果您聽不到聲音，請檢查電腦音量。",
+                        );
+                    })
+                    .catch((e) => {
+                        alert(
+                            "❌ 播放失敗: " +
+                                e.message +
+                                "\n\n可能原因：檔案不存在或格式不支援。",
+                        );
+                    });
+            }
+            // 播放語音指令的 Helper (使用 Promise 等待播放完成)
+            function playVoiceCommand(filename) {
+                return new Promise((resolve, reject) => {
+                    // 在 Kiosk X: 模式下，路徑需為 ./voice/filename
+                    const src = "./voice/" + filename;
+                    console.log(`[Audio] 播放指令: ${src}`);
+
+                    const audio = new Audio(src);
+                    audio.volume = 1.0;
+                    // 追蹤當前播放的 Audio 物件，以便 stopTraining 可隨時暫停
+                    state.currentAudio = audio;
+
+                    // 取得對應的中文口令 (用於 TTS fallback)
+                    const chineseText = voiceFileToText[filename] || filename;
+
+                    audio.onended = () => {
+                        resolve();
+                    };
+
+                    audio.onerror = (e) => {
+                        console.error(`[Audio] 播放失敗: ${src}`, e);
+                        // 失敗時使用 TTS 備援，使用中文口令
+                        if ("speechSynthesis" in window) {
+                            window.speechSynthesis.cancel();
+                            const utterance = new SpeechSynthesisUtterance(
+                                chineseText,
+                            );
+                            utterance.lang = "zh-TW";
+                            utterance.rate = 1.15;
+                            utterance.pitch = 0.45;
+                            window.speechSynthesis.speak(utterance);
+                            console.log(`[TTS 備援] ${chineseText}`);
+                        }
+                        // 给一點時間讓 TTS 唸完 (粗估)
+                        setTimeout(resolve, 2500);
+                    };
+
+                    // 嘗試播放
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch((error) => {
+                            console.warn(
+                                `[Audio] Play error for ${src}:`,
+                                error,
+                            );
+                            // 再次嘗試 TTS (使用中文)
+                            if ("speechSynthesis" in window) {
+                                window.speechSynthesis.cancel();
+                                const utterance = new SpeechSynthesisUtterance(
+                                    chineseText,
+                                );
+                                utterance.lang = "zh-TW";
+                                utterance.rate = 1.15;
+                                utterance.pitch = 0.45;
+                                window.speechSynthesis.speak(utterance);
+                                console.log(`[TTS 備援] ${chineseText}`);
+                            }
+                            setTimeout(resolve, 2500);
+                        });
+                    }
+                });
+            }
+
+            // 執行 SOP 口令序列 (依序播放錄音檔)
+            async function runSOPSequence(modeName) {
+                const txt = document.getElementById("training-status-text");
+                if (txt) txt.textContent = `SOP: 執行中...`;
+
+                // 依序播放，播完一個才播下一個
+                // 檔名對應確認：
+                // 射手就位 -> sop_01_ready.m4a
+                // 臥姿預備 -> sop_02_prone.m4a
+                // 六發裝子彈 -> sop_03_load.m4a
+                // 左線預備 -> sop_04_left.m4a
+                // 右線預備 -> sop_05_right.m4a
+                // 全線預備 -> sop_06_all.m4a
+                // 開保險開始射擊 -> sop_07_fire.m4a
+
+                if (txt) txt.textContent = "SOP: 射手就位...";
+                await playVoiceCommand("sop_01_ready.m4a");
+
+                // 每個指令間可以加一點間隔
+                await new Promise((r) => setTimeout(r, 500));
+
+                if (txt) txt.textContent = "SOP: 臥姿預備...";
+                await playVoiceCommand("sop_02_prone.m4a");
+                await new Promise((r) => setTimeout(r, 500));
+
+                if (txt) txt.textContent = "SOP: 六發裝子彈...";
+                await playVoiceCommand("sop_03_load.m4a");
+                await new Promise((r) => setTimeout(r, 500));
+
+                if (txt) txt.textContent = "SOP: 左線預備...";
+                await playVoiceCommand("sop_04_left.m4a");
+                await new Promise((r) => setTimeout(r, 200));
+
+                if (txt) txt.textContent = "SOP: 右線預備...";
+                await playVoiceCommand("sop_05_right.m4a");
+                await new Promise((r) => setTimeout(r, 200));
+
+                if (txt) txt.textContent = "SOP: 全線預備...";
+                await playVoiceCommand("sop_06_all.m4a");
+                await new Promise((r) => setTimeout(r, 500));
+
+                if (txt) txt.textContent = "SOP: 開保險，開始射擊...";
+                // 這個檔案可能包含兩個指令，或者較長
+                await playVoiceCommand("sop_07_fire.m4a");
+
+                // SOP 結束，後續邏輯 (如倒靶、計分) 在 startTraining 的 setTimeout 中處理
+                // 注意：startTraining 的計時器是並行跑的，所以時間要對得上
+            }
+        </script>
+    </body>
+</html>
+<script>
+    window.addEventListener("load", loadTargetSettings);
+</script>

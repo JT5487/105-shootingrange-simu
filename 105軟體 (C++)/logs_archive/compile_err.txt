@@ -1,0 +1,16 @@
+In file included from src/CameraManager.cpp:1:
+include/CameraManager.hpp:22:9: warning: 'PYLON_WIN_BUILD' redefined
+   22 | #define PYLON_WIN_BUILD
+      |         ^~~~~~~~~~~~~~~
+<command-line>: note: this is the location of the previous definition
+src/CameraManager.cpp: In member function 'virtual bool T91::BaslerCamera::open()':
+src/CameraManager.cpp:90:16: error: 'PylonCreateDevice' was not declared in this scope; did you mean 'PylonEnumerateDevices'?
+   90 |     if ((res = PylonCreateDevice(hDi, &hDev_)) != GENAPI_E_OK) {
+      |                ^~~~~~~~~~~~~~~~~
+      |                PylonEnumerateDevices
+src/CameraManager.cpp:92:17: warning: comparison of integer expressions of different signedness: 'HRESULT' {aka 'long int'} and 'unsigned int' [-Wsign-compare]
+   92 |         if (res == 0xC2000001) {
+      |             ~~~~^~~~~~~~~~~~~
+src/CameraManager.cpp:100:17: warning: comparison of integer expressions of different signedness: 'HRESULT' {aka 'long int'} and 'unsigned int' [-Wsign-compare]
+  100 |         if (res == 0xC1FE0001) {
+      |             ~~~~^~~~~~~~~~~~~

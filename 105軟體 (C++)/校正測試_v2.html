@@ -1,0 +1,847 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>T91 系統校正與測試網格 (v1.2.3 - Adjustable)</title>
+    <style>
+        /* CSS 變數用於即時調整靶板 */
+        :root {
+            --target-scale: 1.0;
+            --target-vertical: 0%;
+            --target-spacing: 0%;
+            --target-edge-padding: 8%;
+        }
+
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #050a14;
+            background-image: url('firing_range.jpg');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transition: background-size 0.5s ease-in-out, background-position 0.5s ease-in-out, background-image 0.5s ease-in-out;
+        }
+
+        /* 日間模式底圖：使用原圖重新渲染後的寬視野版 (移除兩側牆壁) */
+        .time-day {
+            background-image: url('firing_range_day.jpg');
+            filter: brightness(1) contrast(1);
+        }
+
+        /* 夜間模式：使用以原圖為基礎渲染出的夜間版本 */
+        .time-night {
+            background-image: url('firing_range_night.jpg');
+            filter: brightness(0.9) contrast(1.1);
+            /* 微調確保細節清晰 */
+        }
+
+        /* 25米模式：底圖較大（呈現近景感），靶位也大 */
+        .mode-25 {
+            background-size: 110%;
+            background-position: center 60%;
+        }
+
+        /* 75米模式：底圖原大（基準比例 1/10 靶板） */
+        .mode-75 {
+            background-size: 100%;
+            background-position: center center;
+        }
+
+        /* 175米模式：底圖縮小一點（遠視感），靶位極小 */
+        .mode-175 {
+            background-size: 95%;
+            background-position: center 45%;
+        }
+
+        /* 300米模式：最遠距離，靶位極小，增加距離感 */
+        .mode-300 {
+            background-size: 90%;
+            background-position: center 40%;
+        }
+
+        /* 300米模式增加靶牆視覺效果 */
+        .mode-300::before,
+        .mode-300::after {
+            content: '';
+            position: absolute;
+            width: 25%;
+            height: 8%;
+            background: linear-gradient(to bottom, #3a3a3a, #2a2a2a);
+            opacity: 0.7;
+            z-index: 1;
+            top: 35%;
+        }
+
+        .mode-300::before {
+            left: 5%;
+            border-radius: 2px;
+        }
+
+        .mode-300::after {
+            right: 5%;
+            border-radius: 2px;
+        }
+
+        /* 綠色邊框代表最新版 */
+        body {
+            box-sizing: border-box;
+        }
+
+        #debug-status {
+            display: none;
+        }
+
+        .header {
+            display: none;
+        }
+
+        /* 6 個區域：改為絕對置中容器以利縮放與透視收斂 */
+        /* 靶版容器：實作 2x 邊距與中央垂直對齊 (支援即時調整) */
+        .zones {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            /* 標靶垂直置中於中心高度 + 可調整偏移 */
+            position: absolute;
+            top: calc(50% + var(--target-vertical));
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            padding: 0 var(--target-edge-padding);
+            /* 邊距使用 CSS 變數 */
+            gap: var(--target-spacing);
+            box-sizing: border-box;
+            transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* 各模式保持相同分佈規則，僅調整標靶大小 */
+        .mode-25 .zones {
+            width: 100%;
+        }
+
+        .mode-75 .zones {
+            width: 100%;
+        }
+
+        .mode-175 .zones {
+            width: 100%;
+        }
+
+        .zone {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            height: 100%;
+        }
+
+        .target-img {
+            display: block;
+            max-width: 90%;
+            width: auto;
+            height: 40px;
+            /* 預設 40px */
+            object-fit: contain;
+            opacity: 1.0;
+            filter: drop-shadow(0 0 10px rgba(0, 0, 0, 1.0)) brightness(0.9);
+            transition: all 0.5s ease-in-out;
+        }
+
+        /* 夜間靶位暗度 */
+        .time-night .target-img {
+            filter: drop_shadow(0 0 10px rgba(0, 0, 0, 1.0)) brightness(0.2);
+            opacity: 1.0;
+        }
+
+        /* 雨天模式：降低亮度、增加灰度、模糊效果 */
+        .weather-rainy {
+            filter: brightness(0.7) saturate(0.6) contrast(0.9);
+        }
+
+        .weather-rainy .target-img {
+            filter: drop-shadow(0 0 15px rgba(0, 0, 0, 0.8)) brightness(0.75) saturate(0.7);
+            opacity: 0.95;
+        }
+
+        /* 雨天 + 夜間組合 */
+        .weather-rainy.time-night {
+            filter: brightness(0.4) saturate(0.5) contrast(0.85);
+        }
+
+        .weather-rainy.time-night .target-img {
+            filter: drop-shadow(0 0 20px rgba(0, 0, 0, 1.0)) brightness(0.15) saturate(0.5);
+            opacity: 0.9;
+        }
+
+        /* 雨滴動畫容器 */
+        .rain-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10000;
+            overflow: hidden;
+            display: none;
+        }
+
+        .weather-rainy .rain-container {
+            display: block;
+        }
+
+        /* 雨滴 */
+        .rain-drop {
+            position: absolute;
+            width: 2px;
+            height: 50px;
+            background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.6));
+            animation: rain-fall linear infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes rain-fall {
+            0% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 0.6;
+            }
+
+            90% {
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+
+        /* ========================================= */
+        /* 距離比例尺寸 (v1.2.3 - 以175m為基準) */
+        /* 175m = 20px, 75m = 60px, 25m = 140px */
+        /* ========================================= */
+        body.mode-25 .target-img {
+            height: calc(140px * var(--target-scale)) !important;
+            max-height: none !important;
+            min-height: unset !important;
+        }
+
+        body.mode-75 .target-img {
+            height: calc(60px * var(--target-scale)) !important;
+            max-height: none !important;
+            min-height: unset !important;
+        }
+
+        body.mode-175 .target-img {
+            height: calc(20px * var(--target-scale)) !important;
+            max-height: none !important;
+            min-height: unset !important;
+        }
+
+        /* 300m靶板更小（距離更遠） */
+        body.mode-300 .target-img {
+            height: calc(12px * var(--target-scale)) !important;
+            max-height: none !important;
+            min-height: unset !important;
+        }
+
+        /* 倒靶狀態：沿 Y 軸旋轉 90 度（變成薄片） */
+        .target-img.knocked-down {
+            transform: rotateY(90deg) !important;
+            transition: transform 0.6s ease-out !important;
+        }
+
+        /* 立靶狀態：恢復正面 */
+        .target-img.standing {
+            transform: rotateY(0deg) !important;
+            transition: transform 0.6s ease-out !important;
+        }
+
+        #version-label {
+            position: absolute;
+            bottom: 10px;
+            right: 15px;
+            color: #00ff00;
+            font-family: monospace;
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 5px 10px;
+            border: 2px solid #00ff00;
+        }
+
+
+        /* 靶中心黑白圓點 */
+        .bullseye-dot {
+            position: absolute;
+            width: 2.4px;
+            height: 2.4px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: #fff;
+            border: 0.4px solid #000;
+            border-radius: 50%;
+            box-shadow: 0 0 1px rgba(255, 255, 255, 0.8);
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        /* 4 個校正點容器 */
+        .corner {
+            position: absolute;
+            width: 120px;
+            height: 120px;
+            z-index: 100;
+            transform: translate(-50%, -50%);
+        }
+
+        /* 紅色十字線 */
+        .corner::before,
+        .corner::after {
+            content: '';
+            position: absolute;
+            background-color: #ff4757;
+        }
+
+        .corner::before {
+            width: 100%;
+            height: 4px;
+            top: 50%;
+            left: 0;
+            margin-top: -2px;
+        }
+
+        .corner::after {
+            width: 4px;
+            height: 100%;
+            left: 50%;
+            top: 0;
+            margin-left: -2px;
+        }
+
+        /* 紅色圈圈 */
+        .corner-aim {
+            position: absolute;
+            width: 70px;
+            height: 70px;
+            border: 5px solid #ff4757;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        /* 精確座標對齊 (5%, 95%) */
+        .lt {
+            top: 5%;
+            left: 5%;
+        }
+
+        .rt {
+            top: 5%;
+            left: 95%;
+        }
+
+        .rb {
+            top: 95%;
+            left: 95%;
+        }
+
+        .lb {
+            top: 95%;
+            left: 5%;
+        }
+
+        /* 黃色引導外圈 */
+        .target-highlighter {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 180px;
+            height: 180px;
+            border: 10px solid #f1c40f;
+            border-radius: 50%;
+            box-shadow: 0 0 50px #f1c40f;
+            display: none;
+            animation: pulse-ring 1s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.5;
+            }
+        }
+
+        .instruction {
+            display: none;
+        }
+
+        .instruction span {
+            display: none;
+        }
+
+        #status-container {
+            display: none;
+        }
+
+        /* 命中點點樣式 */
+        .hit-marker {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background-color: #f00;
+            border: 1px solid white;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 0 10px #f00;
+            z-index: 9999;
+            animation: fadeOut 1.5s forwards;
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: translate(-50%, -50%) scale(2);
+            }
+
+            100% {
+                opacity: 0;
+                transform: translate(-50%, -50%) scale(0.5);
+            }
+        }
+
+        #hit-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="version-label">v1.2.3 - Distance Scaled | Mode: <span id="current-mode-label">---</span></div>
+
+    <!-- 雨滴容器 -->
+    <div class="rain-container" id="rain-container"></div>
+
+    <div class="zones">
+        <div class="zone" id="zone-1">
+            <img src="target_silhouette.png?v=2" class="target-img standing" id="target-1">
+            <div class="bullseye-dot"></div>
+        </div>
+        <div class="zone" id="zone-2">
+            <img src="target_silhouette.png?v=2" class="target-img standing" id="target-2">
+            <div class="bullseye-dot"></div>
+        </div>
+        <div class="zone" id="zone-3">
+            <img src="target_silhouette.png?v=2" class="target-img standing" id="target-3">
+            <div class="bullseye-dot"></div>
+        </div>
+        <div class="zone" id="zone-4">
+            <img src="target_silhouette.png?v=2" class="target-img standing" id="target-4">
+            <div class="bullseye-dot"></div>
+        </div>
+        <div class="zone" id="zone-5">
+            <img src="target_silhouette.png?v=2" class="target-img standing" id="target-5">
+            <div class="bullseye-dot"></div>
+        </div>
+        <div class="zone" id="zone-6">
+            <img src="target_silhouette.png?v=2" class="target-img standing" id="target-6">
+            <div class="bullseye-dot"></div>
+        </div>
+    </div>
+
+    <div id="hit-container"></div>
+    <audio id="gunshot-sound-base" preload="auto" style="display:none;">
+        <source src="gunshot.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // Web Audio API 合成槍聲 (備援方案 - 強化版)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSynthGunshot() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // 建立主音量控制
+            const mainGain = audioCtx.createGain();
+            mainGain.gain.setValueAtTime(1.5, audioCtx.currentTime); // 增加音量 1.5 倍
+            mainGain.connect(audioCtx.destination);
+
+            const bufferSize = audioCtx.sampleRate * 1.5; // 延長到 1.5 秒以容納迴聲
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+
+            for (let i = 0; i < bufferSize; i++) {
+                data[i] = Math.random() * 2 - 1;
+            }
+
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+
+            // 低通濾波器模擬槍聲悶響
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+            filter.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.15);
+
+            // 主包絡線 (衝擊聲)
+            const envelope = audioCtx.createGain();
+            envelope.gain.setValueAtTime(1.0, audioCtx.currentTime);
+            envelope.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+
+            // 迴聲 (Reverb/Echo) 模擬
+            const reverb = audioCtx.createGain();
+            reverb.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            reverb.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+
+            noise.connect(filter);
+            filter.connect(envelope);
+            envelope.connect(mainGain);
+
+            // 將噪音也連到迴聲路徑
+            filter.connect(reverb);
+            reverb.connect(mainGain);
+
+            noise.start();
+            noise.stop(audioCtx.currentTime + 1.2);
+        }
+
+        // 音效池 (Sound Pool) - 全方位優化
+        const soundPool = [];
+        const poolSize = 15; // 增加到 15 聲道
+        for (let i = 0; i < poolSize; i++) {
+            const audio = new Audio("gunshot");
+            audio.preload = "auto";
+            soundPool.push(audio);
+        }
+        let currentPoolIdx = 0;
+
+        function playGunshotEffect() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            // 嘗試從池中抓取一個可用的音效播放
+            const sound = soundPool[currentPoolIdx];
+            sound.currentTime = 0;
+            sound.volume = 1.0;
+
+            const playPromise = sound.play();
+            if (playPromise !== undefined) {
+                playPromise.catch(e => {
+                    playSynthGunshot(); // MP3 失敗時使用合成音備援
+                });
+            }
+            currentPoolIdx = (currentPoolIdx + 1) % poolSize;
+        }
+
+        function unlockAudio() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            playGunshotEffect();
+            // 強制預載所有池中音效
+            soundPool.forEach(s => s.load());
+            document.getElementById('audio-btn').style.background = '#2ecc71';
+            document.getElementById('audio-btn').innerText = '✅ 音效已就緒';
+        }
+
+        document.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(e => console.log(e));
+            }
+        });
+
+        const debugStatus = document.getElementById('debug-status');
+        const hitContainer = document.getElementById('hit-container');
+
+        const corners = [
+            document.getElementById('corner-0'),
+            document.getElementById('corner-1'),
+            document.getElementById('corner-2'),
+            document.getElementById('corner-3')
+        ];
+
+        let lastCalibCount = -1;
+        const calibNames = ["左上角", "右上角", "右下角", "左下角"];
+
+        // 已移除校正引導邏輯
+
+        function announceHitLocation(dx, dy, width, height) {
+            // 如果目前正處於連續射擊 (語音還在播放中)，則跳過後續點位的語音說明
+            if (window.speechSynthesis.speaking) {
+                return;
+            }
+
+            // dx, dy 是相對於中心點的偏移像素
+
+            // 【靶板範圍判定】：只在打中迷彩靶板內才發聲
+            // 根據截圖，靶板寬度約佔區域 75%，高度約佔螢幕 60%
+            const targetWidth = width * 0.75;
+            const targetHeight = height * 0.6;
+
+            // 如果打在靶板外部 (例如背景黑色區域)，不播放語音
+            if (Math.abs(dx) > targetWidth / 2 || Math.abs(dy) > targetHeight / 2) {
+                return;
+            }
+
+            const bullseyeThreshold = Math.min(width, height) * 0.02; // 約 10-20 像素
+            const distance = Math.sqrt(dx * dx + dy * dy);
+
+            let text = "";
+            if (distance < bullseyeThreshold) {
+                text = "正中目標";
+            } else {
+                // 第一象限 (右上): dx > 0, dy < 0
+                // 第二象限 (右下): dx > 0, dy > 0
+                // 第三象限 (左下): dx < 0, dy > 0
+                // 第四象限 (左上): dx < 0, dy < 0
+                if (dx > 0 && dy < 0) text = "右上";
+                else if (dx > 0 && dy > 0) text = "右下";
+                else if (dx < 0 && dy > 0) text = "左下";
+                else if (dx < 0 && dy < 0) text = "左上";
+            }
+
+            if (text) {
+                // 已根據要求取消報靶語音輸出
+                /*
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-TW';
+                utterance.rate = 1.3;
+                window.speechSynthesis.speak(utterance);
+                */
+            }
+        }
+
+        function createHitMarker(x, y) {
+            // 播放槍擊聲 (改用音效池)
+            playGunshotEffect();
+
+            const dot = document.createElement('div');
+            dot.className = 'hit-marker';
+
+            // 座標轉換: 後端傳來的是 -1.0 到 1.0 (視窗百分比)
+            const pixelX = (x + 1.0) / 2.0 * window.innerWidth;
+            const pixelY = (1.0 - y) / 2.0 * window.innerHeight;
+
+            dot.style.left = pixelX + 'px';
+            dot.style.top = pixelY + 'px';
+            hitContainer.appendChild(dot);
+
+            // 獲取所有靶板並檢查是否命中任何一個
+            const targetEls = document.querySelectorAll('.target-img');
+
+            // 根據射擊模式設定命中區域放大倍數
+            // 25m/75m: 靶板大，必須紅點在靶板內（不放大）
+            // 175m/300m: 靶板小，稍微放大容錯範圍
+            const currentMode = document.body.className.match(/mode-(\d+)/);
+            const mode = currentMode ? currentMode[1] : '25';
+            let expandFactor = 1.0;  // 預設不放大（25m/75m）
+            if (mode === '175') expandFactor = 1.2;  // 175m: 只放大 1.2 倍
+            else if (mode === '300') expandFactor = 1.3;  // 300m: 只放大 1.3 倍
+
+            for (let i = 0; i < targetEls.length; i++) {
+                const targetEl = targetEls[i];
+                const rect = targetEl.getBoundingClientRect();
+
+                // 計算命中區域
+                const expandedWidth = rect.width * expandFactor;
+                const expandedHeight = rect.height * expandFactor;
+                const expandedLeft = rect.left - (expandedWidth - rect.width) / 2;
+                const expandedTop = rect.top - (expandedHeight - rect.height) / 2;
+
+                // 檢查紅點是否在靶板區域內
+                if (pixelX >= expandedLeft && pixelX <= expandedLeft + expandedWidth &&
+                    pixelY >= expandedTop && pixelY <= expandedTop + expandedHeight) {
+
+                    // 命中！通知後端計數
+                    const shooterId = i + 1;
+                    fetch('http://localhost:8081/command', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            action: 'register_hit',
+                            data: { shooter_id: shooterId }
+                        })
+                    }).catch(err => console.error('Failed to register hit:', err));
+
+                    console.log(`[HIT] Mode:${mode} Shooter:${shooterId} RedDot:(${pixelX.toFixed(0)},${pixelY.toFixed(0)}) Target:(${rect.left.toFixed(0)},${rect.top.toFixed(0)}) Size:${rect.width.toFixed(0)}x${rect.height.toFixed(0)}`);
+                    break;  // 只計一個靶
+                }
+            }
+
+            // 自動移除紅點
+            setTimeout(() => {
+                dot.remove();
+            }, 1500);
+        }
+
+        let lastShotSequence = -1; // Initialize with -1 to trigger sync
+        window.trainingActive = false;  // 預設為 false，只有按「訓練開始」才會變 true
+
+        async function pollData() {
+            try {
+                // 獲獲狀態 (檢查距離模式與時間)
+                const stateRes = await fetch('http://localhost:8081/state');
+                if (stateRes.ok) {
+                    const stateData = await stateRes.json();
+
+                    // 處理距離模式、時間和天氣
+                    const mode = stateData.shootingMode || '25';
+                    const time = stateData.timeOfDay || 'day';
+                    const weather = stateData.weather || 'sunny';
+
+                    // 組合所有模式類名
+                    let classNames = `mode-${mode} time-${time}`;
+                    if (weather === 'rainy') {
+                        classNames += ' weather-rainy';
+                    }
+
+                    document.body.className = classNames;
+                    document.getElementById('current-mode-label').textContent = `${mode}m | ${time} | ${weather}`;
+
+                    // 更新靶板調整參數 (如果有的話)
+                    if (stateData.targetAdjustments) {
+                        const adj = stateData.targetAdjustments;
+                        const root = document.documentElement;
+                        if (adj.scale !== undefined) root.style.setProperty('--target-scale', adj.scale);
+                        if (adj.vertical !== undefined) root.style.setProperty('--target-vertical', (adj.vertical * 100) + '%');
+                        if (adj.spacing !== undefined) root.style.setProperty('--target-spacing', (adj.spacing * 7.4) + '%');
+                        if (adj.edgePadding !== undefined) root.style.setProperty('--target-edge-padding', (adj.edgePadding * 8) + '%');
+                    }
+
+                    // 更新靶板倒靶狀態（旋轉動畫）
+                    if (stateData.targetsDown) {
+                        for (let i = 0; i < 6; i++) {
+                            const targetImg = document.getElementById(`target-${i + 1}`);
+                            if (targetImg) {
+                                if (stateData.targetsDown[i]) {
+                                    targetImg.classList.remove('standing');
+                                    targetImg.classList.add('knocked-down');
+                                } else {
+                                    targetImg.classList.remove('knocked-down');
+                                    targetImg.classList.add('standing');
+                                }
+                            }
+                        }
+                    }
+                    // 儲存訓練狀態
+                    window.trainingActive = stateData.isScoring || false;
+                }
+
+                // 只有在訓練開始時才處理射擊
+                if (window.trainingActive) {
+                    const shotsRes = await fetch('http://localhost:8081/shots');
+                    if (shotsRes.ok) {
+                        const shots = await shotsRes.json();
+
+                        // First time sync: just record current highest sequence
+                        if (lastShotSequence === -1) {
+                            if (shots.length > 0) {
+                                lastShotSequence = Math.max(...shots.map(s => s.sequence));
+                            } else {
+                                lastShotSequence = 0;
+                            }
+                        } else {
+                            // Regular processing - 只在訓練開始時顯示紅點和槍聲
+                            shots.forEach(shot => {
+                                if (shot.sequence > lastShotSequence) {
+                                    createHitMarker(shot.x, shot.y);
+                                    lastShotSequence = shot.sequence;
+                                }
+                            });
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Backend connection lost");
+            }
+            setTimeout(pollData, 50);
+        }
+
+        pollData();
+
+        // 生成雨滴動畫
+        function createRainDrops() {
+            const rainContainer = document.getElementById('rain-container');
+            const dropCount = 100; // 雨滴數量
+
+            for (let i = 0; i < dropCount; i++) {
+                const drop = document.createElement('div');
+                drop.className = 'rain-drop';
+
+                // 隨機位置
+                drop.style.left = Math.random() * 100 + '%';
+
+                // 隨機延遲
+                drop.style.animationDelay = Math.random() * 2 + 's';
+
+                // 隨機持續時間（速度）
+                drop.style.animationDuration = (Math.random() * 0.5 + 0.5) + 's';
+
+                rainContainer.appendChild(drop);
+            }
+        }
+
+        // 初始化雨滴
+        createRainDrops();
+
+        // 測試函數：手動觸發倒靶動畫
+        window.testKnockdown = function () {
+            for (let i = 1; i <= 6; i++) {
+                const target = document.getElementById(`target-${i}`);
+                if (target) {
+                    target.classList.remove('standing');
+                    target.classList.add('knocked-down');
+                    console.log(`Target ${i} rotated`);
+                }
+            }
+        };
+
+        window.testStanding = function () {
+            for (let i = 1; i <= 6; i++) {
+                const target = document.getElementById(`target-${i}`);
+                if (target) {
+                    target.classList.remove('knocked-down');
+                    target.classList.add('standing');
+                    console.log(`Target ${i} restored`);
+                }
+            }
+        };
+
+        console.log('Test functions available: testKnockdown(), testStanding()');
+    </script>
+</body>
+
+</html>

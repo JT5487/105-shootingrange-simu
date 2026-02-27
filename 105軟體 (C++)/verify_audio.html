@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+    <h1>Audio Verification Test</h1>
+    <div id="status">Testing...</div>
+    <div id="logs"></div>
+
+    <script>
+        const logDiv = document.getElementById('logs');
+        function log(msg) {
+            logDiv.innerHTML += msg + "<br>";
+            console.log(msg);
+        }
+
+        async function test() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+                // Mount check simulation (trying to read file)
+                const filename = 'sop_final.m4a';
+
+                // We test playing it
+                const audio = new Audio(filename);
+
+                audio.addEventListener('playing', () => {
+                    document.getElementById('status').innerText = "SUCCESS: Audio is playing!";
+                    document.getElementById('status').style.color = "green";
+                    log("Event: playing fired.");
+                });
+
+                audio.addEventListener('error', (e) => {
+                    document.getElementById('status').innerText = "FAILED: " + (audio.error ? audio.error.message : "Unknown error");
+                    document.getElementById('status').style.color = "red";
+                    log("Event: error fired. Code: " + (audio.error ? audio.error.code : "N/A"));
+                });
+
+                log("Attempting to resume context...");
+                await audioCtx.resume();
+                log("Context state: " + audioCtx.state);
+
+                log("Attempting play...");
+                await audio.play();
+                log("Play promise resolved.");
+
+            } catch (e) {
+                log("Exception: " + e.message);
+                document.getElementById('status').innerText = "EXCEPTION: " + e.message;
+                document.getElementById('status').style.color = "red";
+            }
+        }
+
+        // Start test on load (with a small delay)
+        window.addEventListener('load', () => {
+            setTimeout(test, 1000);
+        });
+
+        // Also allow click to test (simulating user gesture if needed)
+        document.body.addEventListener('click', test);
+    </script>
+</body>
+
+</html>

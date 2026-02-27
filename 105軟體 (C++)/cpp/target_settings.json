@@ -1,0 +1,167 @@
+{
+    "day_175": {
+        "edgePadding": 3,
+        "scale": 1.3,
+        "spacing": 0.23,
+        "vertical": 0.15,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "day_25": {
+        "edgePadding": 0.11,
+        "scale": 0.71,
+        "spacing": 1,
+        "vertical": 0.16,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "day_300": {
+        "edgePadding": 3,
+        "scale": 1.11,
+        "spacing": -0.7,
+        "vertical": 0.16,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "day_75": {
+        "edgePadding": 1,
+        "scale": 0.75,
+        "spacing": 1,
+        "vertical": 0.19,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "edgePadding": 0.18,
+    "global": {
+        "zeroingX": 0.0,
+        "zeroingY": 0.0
+    },
+    "night_175": {
+        "edgePadding": 3,
+        "scale": 1.03,
+        "spacing": -0.01,
+        "vertical": 0.07,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "night_25": {
+        "edgePadding": 0.3,
+        "scale": 0.59,
+        "spacing": 1,
+        "vertical": 0.13,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "night_300": {
+        "edgePadding": 3,
+        "scale": 1,
+        "spacing": -1.5,
+        "vertical": 0.07,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "night_75": {
+        "edgePadding": 1,
+        "scale": 0.81,
+        "spacing": 1,
+        "vertical": 0.17,
+        "zeroingX": 0,
+        "zeroingY": 0
+    },
+    "scale": 0.84,
+    "shooters": [
+        {
+            "id": 1,
+            "intensity": 4,
+            "minIntensity": 0,
+            "zeroingX": 0.034,
+            "zeroingY": 0.464
+        },
+        {
+            "id": 2,
+            "intensity": 3,
+            "minIntensity": 0,
+            "zeroingX": -0.094,
+            "zeroingY": 0.393
+        },
+        {
+            "id": 3,
+            "intensity": 8,
+            "minIntensity": 0,
+            "zeroingX": -0.39,
+            "zeroingY": 0.464
+        },
+        {
+            "id": 4,
+            "intensity": 0,
+            "minIntensity": 0,
+            "zeroingX": 0.0,
+            "zeroingY": 0.0
+        },
+        {
+            "id": 5,
+            "intensity": 0,
+            "minIntensity": 0,
+            "zeroingX": 0.0,
+            "zeroingY": 0.0
+        },
+        {
+            "id": 6,
+            "intensity": 0,
+            "minIntensity": 0,
+            "zeroingX": 0.0,
+            "zeroingY": 0.0
+        }
+    ],
+    "spacing": 0.29,
+    "sunny_day": {
+        "edgePadding": 2.84,
+        "scale": 1.22,
+        "spacing": 1,
+        "vertical": 0.13
+    },
+    "sunny_day_175": {
+        "edgePadding": 2.75,
+        "scale": 1.53,
+        "spacing": 1,
+        "vertical": 0.12
+    },
+    "sunny_day_25": {
+        "edgePadding": 0.24,
+        "scale": 1,
+        "spacing": 1,
+        "vertical": 0.09
+    },
+    "sunny_day_75": {
+        "edgePadding": 1,
+        "scale": 1,
+        "spacing": 1,
+        "vertical": 0.13
+    },
+    "sunny_night": {
+        "edgePadding": 0.44,
+        "scale": 1,
+        "spacing": 1,
+        "vertical": 0.05
+    },
+    "sunny_night_175": {
+        "edgePadding": 3,
+        "scale": 1.25,
+        "spacing": 0.4,
+        "vertical": 0.04
+    },
+    "sunny_night_25": {
+        "edgePadding": 0.52,
+        "scale": 1,
+        "spacing": 1,
+        "vertical": 0.03
+    },
+    "sunny_night_75": {
+        "edgePadding": 1.4,
+        "scale": 1,
+        "spacing": 1,
+        "vertical": 0.05
+    },
+    "useIntensityId": true,
+    "vertical": 0.08
+}

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>T91 校準棋盤格 - A3 打印模板</title>
+    <style>
+        @page {
+            size: A3 landscape;
+            margin: 0;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+            }
+            
+            .no-print {
+                display: none;
+            }
+        }
+        
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 420mm;
+            margin: 0 auto;
+            background: white;
+            padding: 0;
+        }
+        
+        .instructions {
+            padding: 20px;
+            background: #fffacd;
+            border: 2px solid #ffa500;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .instructions h2 {
+            margin-top: 0;
+            color: #d2691e;
+        }
+        
+        .instructions ol {
+            line-height: 1.8;
+        }
+        
+        .chessboard-container {
+            width: 420mm;
+            height: 297mm;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            page-break-after: always;
+        }
+        
+        .chessboard {
+            display: grid;
+            grid-template-columns: repeat(11, 30mm);
+            grid-template-rows: repeat(8, 30mm);
+            border: 2mm solid #000;
+        }
+        
+        .square {
+            width: 30mm;
+            height: 30mm;
+        }
+        
+        .black {
+            background: #000;
+        }
+        
+        .white {
+            background: #fff;
+        }
+        
+        .info {
+            text-align: center;
+            margin: 20px;
+            font-size: 14pt;
+        }
+        
+        .btn {
+            background: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+        }
+        
+        .btn:hover {
+            background: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="instructions no-print">
+            <h2>📐 T91 射擊系統 - 棋盤格校準模板使用說明</h2>
+            
+            <h3>🖨️ 打印設定</h3>
+            <ol>
+                <li><strong>紙張：</strong>A3 橫向（420mm × 297mm）</li>
+                <li><strong>比例：</strong>100%（實際尺寸，不要縮放）</li>
+                <li><strong>邊距：</strong>0mm（無邊距）</li>
+                <li><strong>彩色/黑白：</strong>黑白即可</li>
+            </ol>
+            
+            <h3>📏 規格確認</h3>
+            <ul>
+                <li>棋盤格：11×8 格子（10×7 = 70 個內角點）</li>
+                <li>每格尺寸：30mm × 30mm</li>
+                <li>總尺寸：330mm × 240mm</li>
+            </ul>
+            
+            <h3>🔧 安裝步驟</h3>
+            <ol>
+                <li>打印後檢查尺寸：用尺測量一個格子，應為 30mm × 30mm</li>
+                <li>將棋盤格平整地貼在投影幕上（使用低黏性膠帶）</li>
+                <li>確保棋盤格平整無皺褶</li>
+                <li>棋盤格應完全在投影範圍內</li>
+                <li>環境光線充足但不要有強光反射</li>
+            </ol>
+            
+            <h3>💻 校準操作</h3>
+            <ol>
+                <li>在控制台點擊「自動校準 A」</li>
+                <li>系統自動偵測棋盤格並計算（約 2-5 秒）</li>
+                <li>重複「自動校準 B」</li>
+                <li>完成後移除棋盤格</li>
+            </ol>
+            
+            <h3>✅ 預期效果</h3>
+            <ul>
+                <li>精度：< 2cm（系統誤差）</li>
+                <li>校準時間：每個相機 < 5 秒</li>
+                <li>使用 70 個角點，比手動 4 點精度提升 10 倍以上</li>
+            </ul>
+            
+            <button class="btn" onclick="window.print()">🖨️ 打印此頁</button>
+        </div>
+        
+        <div class="info no-print">
+            <strong>⬇️ 下方為 A3 打印區域 ⬇️</strong>
+            <br>
+            <span style="color: #ff0000;">確認打印設定：A3 橫向、100% 比例、無邊距</span>
+        </div>
+        
+        <!-- A3 打印區域 -->
+        <div class="chessboard-container">
+            <div>
+                <div class="info" style="margin-bottom: 10mm;">
+                    <strong>T91 射擊系統校準板 | 11×8 格 | 30mm/格</strong>
+                </div>
+                <div class="chessboard" id="chessboard"></div>
+                <div class="info" style="margin-top: 10mm; font-size: 10pt;">
+                    打印後請測量：一個格子應為 30mm × 30mm
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 生成棋盤格（11×8 格）
+        const chessboard = document.getElementById('chessboard');
+        const rows = 8;
+        const cols = 11;
+        
+        for (let row = 0; row < rows; row++) {
+            for (let col = 0; col < cols; col++) {
+                const square = document.createElement('div');
+                square.className = 'square ' + ((row + col) % 2 === 0 ? 'white' : 'black');
+                chessboard.appendChild(square);
+            }
+        }
+    </script>
+</body>
+</html>
