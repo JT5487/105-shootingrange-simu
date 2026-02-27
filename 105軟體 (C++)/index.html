@@ -1685,140 +1685,9 @@
                             </div>
                         </div>
 
-                        <!-- 邊緣間距 -->
-                        <div style="margin-bottom: 15px">
-                            <label
-                                style="
-                                    font-size: 0.9em;
-                                    color: #aaa;
-                                    display: flex;
-                                    justify-content: space-between;
-                                "
-                            >
-                                <span>邊緣間距:</span>
-                                <span id="edge-value" style="color: #00d4ff"
-                                    >100%</span
-                                >
-                            </label>
-                            <input
-                                type="range"
-                                id="target-edge"
-                                min="-150"
-                                max="300"
-                                value="100"
-                                style="width: 100%; margin-top: 5px"
-                                oninput="updateTargetEdge(this.value)"
-                            />
-                            <div
-                                style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    font-size: 0.75em;
-                                    color: #666;
-                                    margin-top: 2px;
-                                "
-                            >
-                                <span>靠邊</span>
-                                <span>留白</span>
-                            </div>
-                        </div>
+                        <!-- 邊緣間距已移除 -- 校準座標 ±0.9 已處理邊緣留白 -->
 
-                        <!-- 彈著修正 (歸零) -->
-                        <div
-                            style="
-                                margin-top: 20px;
-                                padding-top: 15px;
-                                border-top: 1px solid rgba(255, 255, 255, 0.1);
-                            "
-                        >
-                            <h3
-                                style="
-                                    font-size: 0.9em;
-                                    color: #00d4ff;
-                                    margin-bottom: 10px;
-                                "
-                            >
-                                🎯 彈著修正 (歸零)
-                            </h3>
-
-                            <div style="margin-bottom: 15px">
-                                <label
-                                    style="
-                                        font-size: 0.85em;
-                                        color: #aaa;
-                                        display: flex;
-                                        justify-content: space-between;
-                                    "
-                                >
-                                    <span>左右偏移 (X):</span>
-                                    <span
-                                        id="zeroing-x-value"
-                                        style="color: #f1c40f"
-                                        >0.00</span
-                                    >
-                                </label>
-                                <input
-                                    type="range"
-                                    id="zeroing-x"
-                                    min="-1.0"
-                                    max="1.0"
-                                    step="0.01"
-                                    value="0.00"
-                                    style="width: 100%; margin-top: 5px"
-                                    oninput="updateZeroingX(this.value)"
-                                />
-                                <div
-                                    style="
-                                        display: flex;
-                                        justify-content: space-between;
-                                        font-size: 0.7em;
-                                        color: #666;
-                                    "
-                                >
-                                    <span>← 左偏</span>
-                                    <span>右偏 →</span>
-                                </div>
-                            </div>
-
-                            <div style="margin-bottom: 15px">
-                                <label
-                                    style="
-                                        font-size: 0.85em;
-                                        color: #aaa;
-                                        display: flex;
-                                        justify-content: space-between;
-                                    "
-                                >
-                                    <span>上下偏移 (Y):</span>
-                                    <span
-                                        id="zeroing-y-value"
-                                        style="color: #f1c40f"
-                                        >0.00</span
-                                    >
-                                </label>
-                                <input
-                                    type="range"
-                                    id="zeroing-y"
-                                    min="-1.0"
-                                    max="1.0"
-                                    step="0.01"
-                                    value="0.00"
-                                    style="width: 100%; margin-top: 5px"
-                                    oninput="updateZeroingY(this.value)"
-                                />
-                                <div
-                                    style="
-                                        display: flex;
-                                        justify-content: space-between;
-                                        font-size: 0.7em;
-                                        color: #666;
-                                    "
-                                >
-                                    <span>↓ 下偏</span>
-                                    <span>上偏 ↑</span>
-                                </div>
-                            </div>
-                        </div>
+                        <!-- 彈著修正 (歸零) 已移除 -- 改用全域彈著修正 + 射手個別歸零 -->
 
                         <!-- 射手個別歸零與槍枝鑑定 -->
                         <div
@@ -3070,15 +2939,6 @@
                                 (adj.vertical || 0) * 100;
                             document.getElementById("target-spacing").value =
                                 (adj.spacing || 1) * 100;
-                            document.getElementById("target-edge").value =
-                                (adj.edgePadding || 1) * 100;
-
-                            // 載入彈著修正
-                            document.getElementById("zeroing-x").value =
-                                adj.zeroingX || 0;
-                            document.getElementById("zeroing-y").value =
-                                adj.zeroingY || 0;
-
                             updateTargetScale(
                                 document.getElementById("target-scale").value,
                             );
@@ -3088,15 +2948,6 @@
                             );
                             updateTargetSpacing(
                                 document.getElementById("target-spacing").value,
-                            );
-                            updateTargetEdge(
-                                document.getElementById("target-edge").value,
-                            );
-                            updateZeroingX(
-                                document.getElementById("zeroing-x").value,
-                            );
-                            updateZeroingY(
-                                document.getElementById("zeroing-y").value,
                             );
                             console.log(
                                 "已載入環境設定:",
@@ -3161,15 +3012,6 @@
                                 (adj.vertical || 0) * 100;
                             document.getElementById("target-spacing").value =
                                 (adj.spacing || 1) * 100;
-                            document.getElementById("target-edge").value =
-                                (adj.edgePadding || 1) * 100;
-
-                            // 載入彈著修正
-                            document.getElementById("zeroing-x").value =
-                                adj.zeroingX || 0;
-                            document.getElementById("zeroing-y").value =
-                                adj.zeroingY || 0;
-
                             // 更新顯示標籤
                             updateTargetScale(
                                 document.getElementById("target-scale").value,
@@ -3180,15 +3022,6 @@
                             );
                             updateTargetSpacing(
                                 document.getElementById("target-spacing").value,
-                            );
-                            updateTargetEdge(
-                                document.getElementById("target-edge").value,
-                            );
-                            updateZeroingX(
-                                document.getElementById("zeroing-x").value,
-                            );
-                            updateZeroingY(
-                                document.getElementById("zeroing-y").value,
                             );
                             console.log(
                                 "已載入環境設定:",
@@ -3337,22 +3170,8 @@
                 sendTargetAdjustment();
             }
 
-            function updateTargetEdge(value) {
-                document.getElementById("edge-value").textContent = value + "%";
-                sendTargetAdjustment();
-            }
-
-            function updateZeroingX(value) {
-                document.getElementById("zeroing-x-value").textContent =
-                    parseFloat(value).toFixed(2);
-                sendTargetAdjustment();
-            }
-
-            function updateZeroingY(value) {
-                document.getElementById("zeroing-y-value").textContent =
-                    parseFloat(value).toFixed(2);
-                sendTargetAdjustment();
-            }
+            // updateTargetEdge, updateZeroingX, updateZeroingY 已移除
+            // 邊緣間距由校準座標 ±0.9 處理；彈著修正改用全域歸零 + 射手個別歸零
 
             function updateGlobalZeroingX(value) {
                 document.getElementById("global-zeroing-x-value").textContent =
@@ -3403,24 +3222,15 @@
                     parseFloat(
                         document.getElementById("target-spacing").value,
                     ) / 100;
-                const edge =
-                    parseFloat(document.getElementById("target-edge").value) /
-                    100;
-                const zx = parseFloat(
-                    document.getElementById("zeroing-x").value,
-                );
-                const zy = parseFloat(
-                    document.getElementById("zeroing-y").value,
-                );
 
                 // 立即發送調整到後端（即時更新畫面）
                 sendCommand("adjust_targets", {
                     scale: scale,
                     vertical: vertical,
                     spacing: spacing,
-                    edgePadding: edge,
-                    zeroingX: zx,
-                    zeroingY: zy,
+                    edgePadding: 1.0,
+                    zeroingX: 0,
+                    zeroingY: 0,
                 });
 
                 // 延遲儲存：使用者停止拖動 1 秒後自動儲存
@@ -3433,24 +3243,17 @@
 
             // 自動儲存函數（靜默儲存，不跳提示）
             function autoSaveTargetSettings() {
-                // 儲存到瀏覽器 localStorage
                 const settings = {
                     scale: document.getElementById("target-scale").value,
                     vertical: document.getElementById("target-vertical").value,
                     spacing: document.getElementById("target-spacing").value,
-                    edge: document.getElementById("target-edge").value,
-                    zeroingX: document.getElementById("zeroing-x").value,
-                    zeroingY: document.getElementById("zeroing-y").value,
                 };
                 localStorage.setItem(
                     "targetSettings",
                     JSON.stringify(settings),
                 );
-
-                // 同時發送到後端儲存到 JSON 檔案
                 sendCommand("save_target_settings");
-
-                console.log("✅ 靶板設定已自動儲存");
+                console.log("靶板設定已自動儲存");
             }
 
             function saveTargetSettings() {
@@ -3458,21 +3261,13 @@
                     scale: document.getElementById("target-scale").value,
                     vertical: document.getElementById("target-vertical").value,
                     spacing: document.getElementById("target-spacing").value,
-                    edge: document.getElementById("target-edge").value,
-                    zeroingX: document.getElementById("zeroing-x").value,
-                    zeroingY: document.getElementById("zeroing-y").value,
                 };
-
-                // 儲存到瀏覽器 localStorage
                 localStorage.setItem(
                     "targetSettings",
                     JSON.stringify(settings),
                 );
-
-                // 同時發送到後端儲存到 JSON 檔案
                 sendCommand("save_target_settings");
-
-                alert("✅ 靶板設定已儲存！下次啟動時會自動套用。");
+                alert("靶板設定已儲存！下次啟動時會自動套用。");
             }
 
             async function loadTargetSettings() {
@@ -3489,13 +3284,6 @@
                                 (adj.vertical || 0) * 100;
                             document.getElementById("target-spacing").value =
                                 (adj.spacing || 1) * 100;
-                            document.getElementById("target-edge").value =
-                                (adj.edgePadding || 1) * 100;
-
-                            document.getElementById("zeroing-x").value =
-                                adj.zeroingX || 0;
-                            document.getElementById("zeroing-y").value =
-                                adj.zeroingY || 0;
 
                             // 載入全域歸零
                             if (stateData.globalZeroingX !== undefined) {
@@ -3543,15 +3331,6 @@
                             updateTargetSpacing(
                                 document.getElementById("target-spacing").value,
                             );
-                            updateTargetEdge(
-                                document.getElementById("target-edge").value,
-                            );
-                            updateZeroingX(
-                                document.getElementById("zeroing-x").value,
-                            );
-                            updateZeroingY(
-                                document.getElementById("zeroing-y").value,
-                            );
 
                             console.log(
                                 "已載入後端靶板設定 (環境:",
@@ -3568,16 +3347,10 @@
                 document.getElementById("target-scale").value = 100;
                 document.getElementById("target-vertical").value = 0;
                 document.getElementById("target-spacing").value = 100;
-                document.getElementById("target-edge").value = 100;
-                document.getElementById("zeroing-x").value = 0;
-                document.getElementById("zeroing-y").value = 0;
 
                 document.getElementById("scale-value").textContent = "100%";
                 document.getElementById("vertical-value").textContent = "0%";
                 document.getElementById("spacing-value").textContent = "100%";
-                document.getElementById("edge-value").textContent = "100%";
-                document.getElementById("zeroing-x-value").textContent = "0.00";
-                document.getElementById("zeroing-y-value").textContent = "0.00";
 
                 sendTargetAdjustment();
             }
