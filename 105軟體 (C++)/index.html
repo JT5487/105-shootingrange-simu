@@ -1412,160 +1412,7 @@
                         </div>
                     </div>
 
-                    <!-- 雷射信號強度監測 -->
-                    <div
-                        class="panel"
-                        style="
-                            border: 2px solid #f1c40f;
-                            background: rgba(241, 196, 15, 0.05);
-                        "
-                    >
-                        <h2 style="color: #f1c40f">
-                            📡 雷射信號監測 (槍枝鑑定)
-                        </h2>
-                        <div
-                            style="
-                                display: flex;
-                                justify-content: space-between;
-                                align-items: center;
-                                margin-bottom: 10px;
-                                background: rgba(0, 0, 0, 0.3);
-                                padding: 8px;
-                                border-radius: 5px;
-                            "
-                        >
-                            <span style="font-size: 0.9em">最新擊發強度:</span>
-                            <span
-                                id="last-intensity"
-                                style="
-                                    font-size: 1.5em;
-                                    font-weight: bold;
-                                    color: #f1c40f;
-                                "
-                                >--</span
-                            >
-                        </div>
-                        <div
-                            style="
-                                font-size: 0.8em;
-                                color: #888;
-                                margin-bottom: 5px;
-                            "
-                        >
-                            各靶位平均強度 (像素面積):
-                        </div>
-                        <div
-                            style="
-                                display: grid;
-                                grid-template-columns: repeat(3, 1fr);
-                                gap: 5px;
-                            "
-                        >
-                            <div
-                                style="
-                                    background: rgba(255, 255, 255, 0.05);
-                                    padding: 5px;
-                                    border-radius: 3px;
-                                    text-align: center;
-                                "
-                            >
-                                <div style="font-size: 0.7em; color: #aaa">
-                                    1號
-                                </div>
-                                <div id="avg-int-1" style="color: #00d4ff">
-                                    --
-                                </div>
-                            </div>
-                            <div
-                                style="
-                                    background: rgba(255, 255, 255, 0.05);
-                                    padding: 5px;
-                                    border-radius: 3px;
-                                    text-align: center;
-                                "
-                            >
-                                <div style="font-size: 0.7em; color: #aaa">
-                                    2號
-                                </div>
-                                <div id="avg-int-2" style="color: #00d4ff">
-                                    --
-                                </div>
-                            </div>
-                            <div
-                                style="
-                                    background: rgba(255, 255, 255, 0.05);
-                                    padding: 5px;
-                                    border-radius: 3px;
-                                    text-align: center;
-                                "
-                            >
-                                <div style="font-size: 0.7em; color: #aaa">
-                                    3號
-                                </div>
-                                <div id="avg-int-3" style="color: #00d4ff">
-                                    --
-                                </div>
-                            </div>
-                            <div
-                                style="
-                                    background: rgba(255, 255, 255, 0.05);
-                                    padding: 5px;
-                                    border-radius: 3px;
-                                    text-align: center;
-                                "
-                            >
-                                <div style="font-size: 0.7em; color: #aaa">
-                                    4號
-                                </div>
-                                <div id="avg-int-4" style="color: #00d4ff">
-                                    --
-                                </div>
-                            </div>
-                            <div
-                                style="
-                                    background: rgba(255, 255, 255, 0.05);
-                                    padding: 5px;
-                                    border-radius: 3px;
-                                    text-align: center;
-                                "
-                            >
-                                <div style="font-size: 0.7em; color: #aaa">
-                                    5號
-                                </div>
-                                <div id="avg-int-5" style="color: #00d4ff">
-                                    --
-                                </div>
-                            </div>
-                            <div
-                                style="
-                                    background: rgba(255, 255, 255, 0.05);
-                                    padding: 5px;
-                                    border-radius: 3px;
-                                    text-align: center;
-                                "
-                            >
-                                <div style="font-size: 0.7em; color: #aaa">
-                                    6號
-                                </div>
-                                <div id="avg-int-6" style="color: #00d4ff">
-                                    --
-                                </div>
-                            </div>
-                        </div>
-                        <button
-                            class="btn"
-                            style="
-                                width: 100%;
-                                font-size: 0.7em;
-                                padding: 4px;
-                                margin-top: 8px;
-                                background: rgba(255, 255, 255, 0.1);
-                            "
-                            onclick="resetIntensityStats()"
-                        >
-                            清除統計
-                        </button>
-                    </div>
+                    <!-- 雷射信號監測面板已移除 -->
 
                     <!-- 靶板調整面板 -->
                     <div class="panel">
@@ -1836,98 +1683,7 @@
                                     margin-bottom: 10px;
                                 "
                             >
-                                <div
-                                    style="
-                                        display: flex;
-                                        justify-content: space-between;
-                                        align-items: center;
-                                        margin-bottom: 8px;
-                                    "
-                                >
-                                    <span style="font-size: 0.8em"
-                                        >鑑定強度:</span
-                                    >
-                                    <div>
-                                        <span
-                                            id="shooter-target-int-display"
-                                            style="
-                                                color: #f1c40f;
-                                                font-weight: bold;
-                                            "
-                                            >--</span
-                                        >
-                                        <button
-                                            class="btn"
-                                            style="
-                                                font-size: 0.6em;
-                                                padding: 2px 5px;
-                                                margin-left: 5px;
-                                            "
-                                            onclick="captureIntensity()"
-                                        >
-                                            擷取目前值
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- 每槍最低強度門檻 -->
-                                <div
-                                    style="
-                                        margin-bottom: 8px;
-                                        padding: 8px;
-                                        background: rgba(255, 71, 87, 0.1);
-                                        border-radius: 5px;
-                                        border: 1px solid rgba(255, 71, 87, 0.3);
-                                    "
-                                >
-                                    <label
-                                        style="
-                                            font-size: 0.75em;
-                                            color: #ff4757;
-                                            display: flex;
-                                            justify-content: space-between;
-                                            align-items: center;
-                                        "
-                                    >
-                                        <span>最低強度門檻:</span>
-                                        <span
-                                            id="shooter-min-int-display"
-                                            style="font-weight: bold"
-                                            >0</span
-                                        >
-                                    </label>
-                                    <input
-                                        type="range"
-                                        id="shooter-min-int"
-                                        min="0"
-                                        max="500"
-                                        step="10"
-                                        value="0"
-                                        style="width: 100%"
-                                        oninput="updateShooterMinIntensity()"
-                                    />
-                                    <div
-                                        style="
-                                            display: flex;
-                                            justify-content: space-between;
-                                            font-size: 0.6em;
-                                            color: #888;
-                                        "
-                                    >
-                                        <span>0 (接受弱信號)</span>
-                                        <span>500 (只接受強信號)</span>
-                                    </div>
-                                    <p
-                                        style="
-                                            font-size: 0.6em;
-                                            color: #ff4757;
-                                            margin-top: 5px;
-                                        "
-                                    >
-                                        💡 1號槍信號弱？設為
-                                        0。其他槍誤判雙擊？調高此值。
-                                    </p>
-                                </div>
+                                <!-- 強度辨識相關 UI 已移除 -->
 
                                 <div style="margin-bottom: 8px">
                                     <label
@@ -1986,39 +1742,7 @@
                                 </div>
                             </div>
 
-                            <div
-                                style="
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 8px;
-                                "
-                            >
-                                <input
-                                    type="checkbox"
-                                    id="enable-intensity-mode"
-                                    onchange="toggleIntensityMode(this.checked)"
-                                />
-                                <label
-                                    for="enable-intensity-mode"
-                                    style="
-                                        font-size: 0.8em;
-                                        color: #f1c40f;
-                                        font-weight: bold;
-                                        cursor: pointer;
-                                    "
-                                >
-                                    啟動強度特徵自動辨識
-                                </label>
-                            </div>
-                            <p
-                                style="
-                                    font-size: 0.6em;
-                                    color: #666;
-                                    margin-top: 5px;
-                                "
-                            >
-                                ※ 啟動後，系統將不看位置，改由雷射強度判別槍枝。
-                            </p>
+                            <!-- 強度特徵自動辨識 UI 已移除 -->
                         </div>
 
                         <!-- 全域彈著修正 (系統歸零) -->
@@ -2315,14 +2039,6 @@
                 shootingMode: "25",
                 isTrainingInProgress: false,
                 trainingTimeouts: [],
-                intensityData: [
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                ],
                 knockdownConfig: {
                     mode: "on_hit",
                     time_seconds: 60,
@@ -2367,15 +2083,7 @@
                         300: { x: 0, y: 0 },
                     },
                 },
-                // 每槍最低強度門檻 (1號預設0，其餘預設30)
-                shooterMinIntensity: {
-                    1: 0,
-                    2: 30,
-                    3: 30,
-                    4: 30,
-                    5: 30,
-                    6: 30,
-                },
+
             };
 
             const sopSteps = [
@@ -2457,43 +2165,7 @@
                                 }
                             }
                             // 同步後端設定 (包括最低強度門檻)
-                            if (s.shooters && Array.isArray(s.shooters)) {
-                                s.shooters.forEach((msgShooter) => {
-                                    const id = msgShooter.id;
-                                    if (msgShooter.minIntensity !== undefined) {
-                                        state.shooterMinIntensity[id] =
-                                            msgShooter.minIntensity;
-                                    }
-                                });
-                                // 如果目前選中的是該射手，更新 UI
-                                const currentId = parseInt(
-                                    document.getElementById("shooter-select")
-                                        .value,
-                                );
-                                const minIntEl =
-                                    document.getElementById("shooter-min-int");
-                                const minIntDisplay = document.getElementById(
-                                    "shooter-min-int-display",
-                                );
-                                if (
-                                    minIntEl &&
-                                    minIntDisplay &&
-                                    state.shooterMinIntensity[currentId] !==
-                                        undefined
-                                ) {
-                                    if (document.activeElement !== minIntEl) {
-                                        // 避免使用者在拉動時被覆蓋
-                                        minIntEl.value =
-                                            state.shooterMinIntensity[
-                                                currentId
-                                            ];
-                                        minIntDisplay.textContent =
-                                            state.shooterMinIntensity[
-                                                currentId
-                                            ];
-                                    }
-                                }
-                            }
+
                             // 顯示校準品質（重投影誤差）
                             if (s.calibrationStatus) {
                                 const cs = s.calibrationStatus;
@@ -2593,35 +2265,8 @@
                         }
                     }
 
-                    // 更新信號強度監測器
-                    if (data.intensity > 0) {
-                        document.getElementById("last-intensity").textContent =
-                            data.intensity;
-                        const stats = state.intensityData[shooterId - 1];
-                        stats.count++;
-                        stats.sum += data.intensity;
-                        const avg = (stats.sum / stats.count).toFixed(1);
-                        document.getElementById(
-                            `avg-int-${shooterId}`,
-                        ).textContent = avg;
-                    }
-                }
-            }
 
-            function resetIntensityStats() {
-                state.intensityData = [
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                    { count: 0, sum: 0 },
-                ];
-                for (let i = 1; i <= 6; i++) {
-                    document.getElementById(`avg-int-${i}`).textContent = "--";
                 }
-                document.getElementById("last-intensity").textContent = "--";
-                state.lastIntensity = 0;
             }
 
             function onShooterSelectChange(id) {
@@ -2656,44 +2301,6 @@
                         "0.000";
                 }
 
-                // 載入鑑定強度 (不隨距離變化)
-                if (shooter) {
-                    document.getElementById(
-                        "shooter-target-int-display",
-                    ).textContent = shooter.intensity || "--";
-                }
-
-                // 載入該槍的最低強度門檻
-                const minIntEl = document.getElementById("shooter-min-int");
-                const minIntDisplay = document.getElementById(
-                    "shooter-min-int-display",
-                );
-                if (minIntEl && minIntDisplay) {
-                    const minInt = state.shooterMinIntensity[id] || 0;
-                    minIntEl.value = minInt;
-                    minIntDisplay.textContent = minInt;
-                }
-            }
-
-            function captureIntensity() {
-                const id = parseInt(
-                    document.getElementById("shooter-select").value,
-                );
-                const val = parseInt(
-                    document.getElementById("last-intensity").textContent,
-                );
-                if (!isNaN(val) && val > 0) {
-                    document.getElementById(
-                        "shooter-target-int-display",
-                    ).textContent = val;
-                    sendCommand("adjust_shooter_intensity", {
-                        shooterId: id,
-                        intensity: val,
-                    });
-                    if (state.shooters) state.shooters[id - 1].intensity = val;
-                } else {
-                    alert("請先對投影幕射擊一次以擷取強度！");
-                }
             }
 
             function updateShooterZeroing() {
@@ -2739,31 +2346,7 @@
                 );
             }
 
-            function updateShooterMinIntensity() {
-                const id = parseInt(
-                    document.getElementById("shooter-select").value,
-                );
-                const minInt = parseInt(
-                    document.getElementById("shooter-min-int").value,
-                );
-
-                document.getElementById("shooter-min-int-display").textContent =
-                    minInt;
-                state.shooterMinIntensity[id] = minInt;
-
-                sendCommand("set_shooter_min_intensity", {
-                    shooterId: id,
-                    minIntensity: minInt,
-                });
-                localStorage.setItem(
-                    "shooterMinIntensity",
-                    JSON.stringify(state.shooterMinIntensity),
-                );
-                console.log(`${id}號槍最低強度門檻設為: ${minInt}`);
-            }
-
             function loadShooterSettingsFromLocalStorage() {
-                // 載入歸零資料
                 const savedZeroing = localStorage.getItem("shooterZeroing");
                 if (savedZeroing) {
                     try {
@@ -2771,29 +2354,10 @@
                         for (let id = 1; id <= 6; id++) {
                             if (data[id]) state.shooterZeroing[id] = data[id];
                         }
-                        console.log("已從本地載入射手歸零資料");
                     } catch (e) {
                         console.warn("載入歸零資料失敗:", e);
                     }
                 }
-
-                // 載入最低強度門檻 (暫時跳過 localStorage 以強制載入新預設值 30)
-                /*
-            const savedMinInt = localStorage.getItem('shooterMinIntensity');
-            if (savedMinInt) {
-                try {
-                    const data = JSON.parse(savedMinInt);
-                    for (let id = 1; id <= 6; id++) {
-                        if (data[id] !== undefined) state.shooterMinIntensity[id] = data[id];
-                    }
-                    console.log('已從本地載入最低強度門檻');
-                } catch (e) { console.warn('載入最低強度門檻失敗:', e); }
-            }
-            */
-            }
-
-            function toggleIntensityMode(enabled) {
-                sendCommand("enable_intensity_id", { enabled: enabled });
             }
 
             function updateShooterDisplay(shooterId) {
@@ -3315,12 +2879,6 @@
                                         .value,
                                 );
                             }
-                            if (stateData.useIntensityId !== undefined) {
-                                document.getElementById(
-                                    "enable-intensity-mode",
-                                ).checked = stateData.useIntensityId;
-                            }
-
                             updateTargetScale(
                                 document.getElementById("target-scale").value,
                             );
