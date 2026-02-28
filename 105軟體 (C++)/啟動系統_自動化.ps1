@@ -86,26 +86,24 @@ function Open-T91-X($file, $tag, $targetX, $targetY, $winW = 1920, $winH = 1080)
 }
 
 # 4. 自動偵測螢幕配置
+# 依 X 座標排序：左=投影幕A, 中=投影幕B, 右=控制台
 $allScreens = [System.Windows.Forms.Screen]::AllScreens
-$primaryScreen = [System.Windows.Forms.Screen]::PrimaryScreen
-$nonPrimary = $allScreens | Where-Object { -not $_.Primary } | Sort-Object { $_.Bounds.X }
+$sorted = $allScreens | Sort-Object { $_.Bounds.X }
 
-# 控制台 -> 主螢幕
-$ctrlX = $primaryScreen.Bounds.X
-$ctrlY = $primaryScreen.Bounds.Y
-$screenW = $primaryScreen.Bounds.Width
-$screenH = $primaryScreen.Bounds.Height
-
-# 投影幕 A（左）和 B（右）-> 依 X 座標排序的非主螢幕
-if ($nonPrimary.Count -ge 2) {
-    $screenA_X = $nonPrimary[0].Bounds.X
-    $screenA_Y = $nonPrimary[0].Bounds.Y
-    $screenA_W = $nonPrimary[0].Bounds.Width
-    $screenA_H = $nonPrimary[0].Bounds.Height
-    $screenB_X = $nonPrimary[1].Bounds.X
-    $screenB_Y = $nonPrimary[1].Bounds.Y
-    $screenB_W = $nonPrimary[1].Bounds.Width
-    $screenB_H = $nonPrimary[1].Bounds.Height
+if ($sorted.Count -ge 3) {
+    # 3 螢幕：X最小=電腦螢幕(控制台), 中=左投影機(A), X最大=右投影機(B)
+    $ctrlX = $sorted[0].Bounds.X
+    $ctrlY = $sorted[0].Bounds.Y
+    $screenW = $sorted[0].Bounds.Width
+    $screenH = $sorted[0].Bounds.Height
+    $screenA_X = $sorted[1].Bounds.X
+    $screenA_Y = $sorted[1].Bounds.Y
+    $screenA_W = $sorted[1].Bounds.Width
+    $screenA_H = $sorted[1].Bounds.Height
+    $screenB_X = $sorted[2].Bounds.X
+    $screenB_Y = $sorted[2].Bounds.Y
+    $screenB_W = $sorted[2].Bounds.Width
+    $screenB_H = $sorted[2].Bounds.Height
 } elseif ($nonPrimary.Count -eq 1) {
     $screenA_X = $nonPrimary[0].Bounds.X
     $screenA_Y = $nonPrimary[0].Bounds.Y

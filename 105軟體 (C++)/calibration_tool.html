@@ -1,0 +1,529 @@
+<!doctype html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8" />
+    <title>T91 引導式校準工具</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #0f0f23; color: #e0e0e0; font-family: 'Microsoft JhengHei', 'Segoe UI', sans-serif; padding: 15px; height: 100vh; display: flex; flex-direction: column; }
+        h1 { font-size: 1.3em; color: #00d4ff; }
+
+        /* 跑馬燈引導列 */
+        .guide-bar {
+            background: linear-gradient(90deg, #1a1a3e, #0f2a4a, #1a1a3e);
+            border: 2px solid #00d4ff;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            min-height: 56px;
+            transition: border-color 0.3s;
+        }
+        .guide-bar.step-action { border-color: #f39c12; }
+        .guide-bar.step-done { border-color: #2ecc71; }
+        .guide-step-num {
+            background: #00d4ff;
+            color: #000;
+            font-weight: bold;
+            border-radius: 50%;
+            width: 36px; height: 36px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.1em;
+            flex-shrink: 0;
+        }
+        .guide-bar.step-action .guide-step-num { background: #f39c12; }
+        .guide-bar.step-done .guide-step-num { background: #2ecc71; }
+        .guide-text {
+            font-size: 1.05em;
+            line-height: 1.5;
+            animation: fadeIn 0.3s ease;
+        }
+        .guide-text strong { color: #f1c40f; }
+        .guide-text .key { display: inline-block; padding: 1px 6px; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); border-radius: 3px; font-family: monospace; font-size: 0.9em; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+        .guide-progress { display: flex; gap: 4px; margin-left: auto; flex-shrink: 0; }
+        .guide-dot { width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.15); transition: background 0.3s; }
+        .guide-dot.done { background: #2ecc71; }
+        .guide-dot.current { background: #00d4ff; animation: pulse 1s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+        .header { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .header .status { margin-left: auto; font-size: 0.9em; padding: 4px 12px; border-radius: 4px; background: rgba(255,255,255,0.05); }
+        .status.active { background: rgba(0,212,255,0.2); color: #00d4ff; }
+        .btn { padding: 8px 16px; border: none; border-radius: 5px; cursor: pointer; font-size: 0.85em; color: #fff; transition: all 0.2s; }
+        .btn:hover { opacity: 0.85; transform: translateY(-1px); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+        .btn-primary { background: #3498db; }
+        .btn-success { background: #2ecc71; }
+        .btn-danger { background: #e74c3c; }
+        .btn-warning { background: #f39c12; }
+        .btn-purple { background: #9b59b6; }
+        .btn-sm { padding: 4px 10px; font-size: 0.75em; }
+        .btn-cam { padding: 10px 24px; font-size: 1em; }
+        .btn-cam.selected { outline: 3px solid #00d4ff; box-shadow: 0 0 15px rgba(0,212,255,0.3); }
+        .main { display: flex; gap: 15px; flex: 1; min-height: 0; margin-top: 10px; }
+        .col-left { flex: 3; display: flex; flex-direction: column; min-height: 0; }
+        .col-right { flex: 2; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 100%; }
+        .panel { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 12px; }
+        .panel h3 { font-size: 0.85em; color: #00d4ff; margin-bottom: 8px; }
+        .screen-container { flex: 1; display: flex; align-items: center; justify-content: center; min-height: 0; }
+        .screen-frame { position: relative; background: #000; border: 2px solid #444; aspect-ratio: 1920 / 1200; width: 100%; max-height: 100%; cursor: crosshair; overflow: hidden; border-radius: 4px; }
+        .crosshair { position: absolute; pointer-events: none; z-index: 10; }
+        .crosshair::before, .crosshair::after { content: ''; position: absolute; background: #00ff00; }
+        .crosshair::before { width: 40px; height: 2px; left: -20px; top: -1px; }
+        .crosshair::after { width: 2px; height: 40px; left: -1px; top: -20px; }
+        .crosshair .dot { position: absolute; width: 8px; height: 8px; background: #00ff00; border-radius: 50%; left: -4px; top: -4px; box-shadow: 0 0 8px #00ff00; }
+        .confirmed-dot { position: absolute; width: 14px; height: 14px; border: 2px solid #f1c40f; border-radius: 50%; transform: translate(-50%, -50%); z-index: 5; }
+        .confirmed-dot span { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #f1c40f; white-space: nowrap; font-weight: bold; }
+        .detection-box { padding: 10px; border-radius: 5px; text-align: center; font-size: 1.05em; font-weight: bold; }
+        .detection-box.waiting { background: rgba(255,255,255,0.05); color: #888; }
+        .detection-box.detected { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .info-row { display: flex; justify-content: space-between; font-size: 0.8em; padding: 3px 0; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .info-row .label { color: #888; }
+        .info-row .value { color: #00d4ff; font-family: monospace; }
+        .step-buttons { display: flex; gap: 5px; margin-top: 5px; }
+        .step-buttons .btn { flex: 1; }
+        .step-buttons .btn.active-step { outline: 2px solid #00d4ff; }
+        .points-table { width: 100%; border-collapse: collapse; font-size: 0.75em; }
+        .points-table th { background: rgba(255,255,255,0.08); padding: 4px; text-align: center; color: #888; }
+        .points-table td { padding: 4px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: monospace; }
+        .result-box { padding: 10px; border-radius: 5px; font-size: 0.9em; }
+        .result-box.good { background: rgba(46,204,113,0.15); color: #2ecc71; }
+        .result-box.ok { background: rgba(241,196,15,0.15); color: #f1c40f; }
+        .result-box.bad { background: rgba(231,76,60,0.15); color: #e74c3c; }
+        .bottom-bar { font-size: 0.72em; color: #555; margin-top: 5px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 T91 引導式校準工具</h1>
+        <button class="btn btn-cam btn-purple" id="btn-cam-a" onclick="startCalibration('A')">Camera A (靶位 1-3)</button>
+        <button class="btn btn-cam btn-purple" id="btn-cam-b" onclick="startCalibration('B')">Camera B (靶位 4-6)</button>
+        <button class="btn btn-danger" id="btn-stop" onclick="stopCalibration()" disabled>⬛ 停止校準</button>
+        <div class="status" id="status-bar">待命</div>
+    </div>
+
+    <!-- 跑馬燈引導列 -->
+    <div class="guide-bar" id="guide-bar">
+        <div class="guide-step-num" id="guide-step-num">0</div>
+        <div class="guide-text" id="guide-text">
+            點擊上方 <strong>[Camera A]</strong> 或 <strong>[Camera B]</strong> 開始校準。
+        </div>
+        <div class="guide-progress" id="guide-progress"></div>
+    </div>
+
+    <div class="main">
+        <div class="col-left">
+            <div class="screen-container">
+                <div class="screen-frame" id="screen-frame" onclick="onScreenClick(event)">
+                    <div class="crosshair" id="crosshair" style="display:none;">
+                        <div class="dot"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bottom-bar">
+                <span>十字標: <span id="crosshair-pos" style="color:#00ff00; font-family:monospace;">-</span></span>
+                <span>點擊畫面定位 | <span style="font-family:monospace;">←→↑↓</span> 微調 | <span style="font-family:monospace;">Enter</span> 確認 | <span style="font-family:monospace;">Z</span> 撤銷</span>
+            </div>
+        </div>
+
+        <div class="col-right">
+            <div class="panel">
+                <h3>📡 偵測狀態</h3>
+                <div class="detection-box waiting" id="detection-box">等待射擊...</div>
+                <div style="margin-top: 8px;">
+                    <div class="info-row"><span class="label">原始像素:</span><span class="value" id="raw-pixel">-</span></div>
+                    <div class="info-row"><span class="label">系統估計:</span><span class="value" id="estimated-pos">-</span></div>
+                    <div class="info-row"><span class="label">十字標位置:</span><span class="value" id="crosshair-val">-</span></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>🔧 微調控制</h3>
+                <div style="font-size:0.8em; color:#aaa;">步進量 (每次方向鍵移動):</div>
+                <div class="step-buttons">
+                    <button class="btn btn-sm btn-primary" onclick="setStep(0.002, this)">精細 0.002</button>
+                    <button class="btn btn-sm btn-primary active-step" id="step-default" onclick="setStep(0.01, this)">正常 0.01</button>
+                    <button class="btn btn-sm btn-primary" onclick="setStep(0.05, this)">粗調 0.05</button>
+                </div>
+                <div style="font-size:0.7em; color:#666; margin-top:6px;">
+                    <span style="font-family:monospace;">Shift</span>+方向鍵 = 5 倍步進
+                </div>
+            </div>
+
+            <div class="panel">
+                <h3>✅ 操作</h3>
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <button class="btn btn-success" id="btn-confirm" onclick="confirmPoint()" disabled>✓ 確認此點</button>
+                    <button class="btn btn-warning" id="btn-undo" onclick="undoPoint()" disabled>↩ 撤銷</button>
+                    <button class="btn btn-primary" id="btn-snap" onclick="snapToEstimate()" disabled>🎯 重新對齊</button>
+                </div>
+            </div>
+
+            <div class="panel" style="flex:1; min-height:80px; overflow-y:auto;">
+                <h3>📋 校準點 (<span id="point-count">0</span> 個)</h3>
+                <table class="points-table" id="points-table">
+                    <tr><th>#</th><th>原始像素</th><th>校正位置</th></tr>
+                </table>
+            </div>
+
+            <div class="panel">
+                <h3>📐 計算結果</h3>
+                <div style="display:flex; gap:8px; margin-bottom:8px;">
+                    <button class="btn btn-success" id="btn-compute" onclick="computeCalibration()" disabled>計算 Homography</button>
+                    <button class="btn btn-primary" id="btn-save" onclick="saveCalibration()" disabled>💾 儲存並套用</button>
+                </div>
+                <div class="result-box" id="result-box" style="display:none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API = 'http://127.0.0.1:8081';
+        let currentCamera = null;
+        let stepSize = 0.01;
+        let crosshairX = 0, crosshairY = 0;
+        let lastRawPixel = null;
+        let lastEstimated = null;
+        let hasDetection = false;
+        let calibActive = false;
+        let lastComputeResult = null;
+        let pollTimer = null;
+        let pointCount = 0;
+        let guideStep = 0;
+
+        // ============================================================
+        // 跑馬燈引導訊息
+        // ============================================================
+        const guideMessages = [
+            { step: 0, text: '點擊上方 <strong>[Camera A]</strong> 或 <strong>[Camera B]</strong> 開始校準。', cls: '' },
+            { step: 1, text: '用雷射槍<strong>射擊投影幕上的任意位置</strong>，持續照射約 1 秒讓系統偵測。建議從<strong>左上角</strong>開始，逐步覆蓋整個幕面。', cls: 'step-action' },
+            { step: 2, text: '系統已偵測到 IR 光點！投影幕上顯示綠色十字標。用 <strong>IR 觀察設備</strong>（手機相機）確認 IR 光點的<strong>實際位置</strong>。', cls: 'step-action' },
+            { step: 3, text: '使用<strong>方向鍵 ←→↑↓</strong> 或<strong>點擊左側畫面</strong>，將綠色十字標移動到 IR 光點的<strong>實際位置</strong>。<span class="key">Shift</span>+方向鍵加速。', cls: 'step-action' },
+            { step: 4, text: '位置調整好了嗎？按 <span class="key">Enter</span> 或點擊 <strong>[✓ 確認此點]</strong> 儲存此校準點。', cls: 'step-action' },
+            { step: 5, text: '已收集 <strong><span id="guide-pts">0</span> 個</strong>校準點。繼續射擊<strong>其他位置</strong>（至少 4 點，建議 8-12 點均勻覆蓋四角和中央）。', cls: '' },
+            { step: 6, text: '校準點已足夠！可繼續增加或點擊 <strong>[計算 Homography]</strong> 進行計算。點越多越精確。', cls: 'step-done' },
+            { step: 7, text: '✅ 計算完成！確認精度後點擊 <strong>[💾 儲存並套用]</strong> 完成校準。如不滿意可繼續增加校準點後重新計算。', cls: 'step-done' },
+        ];
+
+        function updateGuide(step, extra) {
+            guideStep = step;
+            const msg = guideMessages[step] || guideMessages[0];
+            const bar = document.getElementById('guide-bar');
+            const numEl = document.getElementById('guide-step-num');
+            const textEl = document.getElementById('guide-text');
+
+            bar.className = 'guide-bar ' + msg.cls;
+            numEl.textContent = step;
+            let html = msg.text;
+            if (extra) {
+                for (const [k, v] of Object.entries(extra)) {
+                    html = html.replace(`{${k}}`, v);
+                }
+            }
+            textEl.innerHTML = html;
+
+            // 更新進度點
+            const progEl = document.getElementById('guide-progress');
+            progEl.innerHTML = '';
+            for (let i = 1; i <= 7; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'guide-dot' + (i < step ? ' done' : '') + (i === step ? ' current' : '');
+                progEl.appendChild(dot);
+            }
+
+            // 動態更新收集點數
+            const ptsEl = document.getElementById('guide-pts');
+            if (ptsEl) ptsEl.textContent = pointCount;
+        }
+
+        // ============================================================
+        // API 通訊
+        // ============================================================
+        async function sendCommand(action, data = {}) {
+            try {
+                const res = await fetch(API + '/command', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({action, data})
+                });
+                return await res.json();
+            } catch(e) {
+                console.error('API error:', e);
+                return null;
+            }
+        }
+
+        // ============================================================
+        // 校準流程控制
+        // ============================================================
+        async function startCalibration(camera) {
+            currentCamera = camera;
+            calibActive = true;
+            lastComputeResult = null;
+            crosshairX = 0; crosshairY = 0;
+            hasDetection = false;
+            lastRawPixel = null;
+            pointCount = 0;
+
+            await sendCommand('start_guided_calibration', {camera});
+
+            document.getElementById('btn-cam-a').classList.toggle('selected', camera === 'A');
+            document.getElementById('btn-cam-b').classList.toggle('selected', camera === 'B');
+            document.getElementById('btn-stop').disabled = false;
+            document.getElementById('btn-confirm').disabled = false;
+            document.getElementById('btn-undo').disabled = false;
+            document.getElementById('btn-snap').disabled = false;
+            document.getElementById('btn-compute').disabled = false;
+            document.getElementById('btn-save').disabled = true;
+            document.getElementById('result-box').style.display = 'none';
+            updateStatus(`Camera ${camera} 校準中`, true);
+            updateCrosshairDisplay();
+            clearConfirmedDots();
+            updateGuide(1);
+            startPolling();
+        }
+
+        async function stopCalibration() {
+            calibActive = false;
+            currentCamera = null;
+            await sendCommand('stop_guided_calibration');
+            document.getElementById('btn-cam-a').classList.remove('selected');
+            document.getElementById('btn-cam-b').classList.remove('selected');
+            document.getElementById('btn-stop').disabled = true;
+            document.getElementById('btn-confirm').disabled = true;
+            document.getElementById('btn-undo').disabled = true;
+            document.getElementById('btn-snap').disabled = true;
+            document.getElementById('btn-compute').disabled = true;
+            document.getElementById('btn-save').disabled = true;
+            document.getElementById('crosshair').style.display = 'none';
+            updateStatus('待命', false);
+            updateGuide(0);
+            stopPolling();
+        }
+
+        function startPolling() { stopPolling(); pollTimer = setInterval(pollState, 150); }
+        function stopPolling() { if (pollTimer) { clearInterval(pollTimer); pollTimer = null; } }
+
+        async function pollState() {
+            if (!calibActive) return;
+            try {
+                const res = await fetch(API + '/state');
+                const state = await res.json();
+                if (state.guidedCalib && state.guidedCalib.active) {
+                    const gc = state.guidedCalib;
+                    const newDetection = gc.hasDetection && !hasDetection;
+
+                    if (gc.hasDetection) {
+                        if (newDetection) {
+                            crosshairX = gc.estimatedX;
+                            crosshairY = gc.estimatedY;
+                            updateCrosshairOnProjector();
+                            updateGuide(3);
+                        }
+                        hasDetection = true;
+                        lastRawPixel = {x: gc.rawPixelX, y: gc.rawPixelY};
+                        lastEstimated = {x: gc.estimatedX, y: gc.estimatedY};
+                        document.getElementById('detection-box').className = 'detection-box detected';
+                        document.getElementById('detection-box').textContent = '✓ 偵測到 IR 光點';
+                        document.getElementById('raw-pixel').textContent = `(${gc.rawPixelX.toFixed(1)}, ${gc.rawPixelY.toFixed(1)})`;
+                        document.getElementById('estimated-pos').textContent = `(${gc.estimatedX.toFixed(4)}, ${gc.estimatedY.toFixed(4)})`;
+                    } else {
+                        if (hasDetection) {
+                            document.getElementById('detection-box').className = 'detection-box waiting';
+                            document.getElementById('detection-box').textContent = '雷射已離開 (上次偵測保持)';
+                            if (guideStep < 4) updateGuide(4);
+                        }
+                        hasDetection = false;
+                    }
+                    pointCount = (currentCamera === 'A') ? gc.pointsA : gc.pointsB;
+                    document.getElementById('point-count').textContent = pointCount;
+                    updateCrosshairDisplay();
+                }
+            } catch(e) {}
+        }
+
+        // ============================================================
+        // 十字標控制
+        // ============================================================
+        function updateCrosshairDisplay() {
+            const frame = document.getElementById('screen-frame');
+            const ch = document.getElementById('crosshair');
+            if (!calibActive) { ch.style.display = 'none'; return; }
+            ch.style.display = 'block';
+            const pxX = ((crosshairX + 1.0) / 2.0) * frame.clientWidth;
+            const pxY = ((1.0 - crosshairY) / 2.0) * frame.clientHeight;
+            ch.style.left = pxX + 'px';
+            ch.style.top = pxY + 'px';
+            document.getElementById('crosshair-pos').textContent = `(${crosshairX.toFixed(4)}, ${crosshairY.toFixed(4)})`;
+            document.getElementById('crosshair-val').textContent = `(${crosshairX.toFixed(4)}, ${crosshairY.toFixed(4)})`;
+        }
+
+        async function updateCrosshairOnProjector() {
+            await sendCommand('guided_calib_set_display', {x: crosshairX, y: crosshairY});
+        }
+
+        function onScreenClick(e) {
+            if (!calibActive) return;
+            const frame = document.getElementById('screen-frame');
+            const rect = frame.getBoundingClientRect();
+            crosshairX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / rect.width) * 2.0 - 1.0));
+            crosshairY = Math.max(-1, Math.min(1, 1.0 - ((e.clientY - rect.top) / rect.height) * 2.0));
+            updateCrosshairDisplay();
+            updateCrosshairOnProjector();
+            if (guideStep < 4) updateGuide(4);
+        }
+
+        function moveCrosshair(dx, dy) {
+            if (!calibActive) return;
+            crosshairX = Math.max(-1, Math.min(1, crosshairX + dx));
+            crosshairY = Math.max(-1, Math.min(1, crosshairY + dy));
+            updateCrosshairDisplay();
+            updateCrosshairOnProjector();
+        }
+
+        function snapToEstimate() {
+            if (lastEstimated) {
+                crosshairX = lastEstimated.x;
+                crosshairY = lastEstimated.y;
+                updateCrosshairDisplay();
+                updateCrosshairOnProjector();
+            }
+        }
+
+        // ============================================================
+        // 校準點操作
+        // ============================================================
+        async function confirmPoint() {
+            if (!calibActive || !lastRawPixel) {
+                alert('請先射擊讓系統偵測到 IR 光點');
+                return;
+            }
+            const result = await sendCommand('guided_calib_confirm_point', {
+                camera: currentCamera,
+                rawX: lastRawPixel.x, rawY: lastRawPixel.y,
+                correctedX: crosshairX, correctedY: crosshairY
+            });
+            if (result && result.status === 'ok') {
+                addConfirmedDot(crosshairX, crosshairY, result.pointIndex);
+                addTableRow(result.pointIndex, lastRawPixel, {x: crosshairX, y: crosshairY});
+                pointCount = result.pointCount;
+                document.getElementById('point-count').textContent = pointCount;
+
+                lastRawPixel = null;
+                lastEstimated = null;
+                hasDetection = false;
+                document.getElementById('detection-box').className = 'detection-box waiting';
+                document.getElementById('detection-box').textContent = '等待下一個射擊...';
+                document.getElementById('raw-pixel').textContent = '-';
+                document.getElementById('estimated-pos').textContent = '-';
+
+                updateGuide(pointCount >= 4 ? 6 : 5);
+            }
+        }
+
+        async function undoPoint() {
+            if (!calibActive) return;
+            const result = await sendCommand('guided_calib_undo_point', {camera: currentCamera});
+            if (result && result.status === 'ok') {
+                pointCount = result.pointCount;
+                document.getElementById('point-count').textContent = pointCount;
+                removeLastConfirmedDot();
+                removeLastTableRow();
+                updateGuide(pointCount >= 4 ? 6 : (pointCount > 0 ? 5 : 1));
+            }
+        }
+
+        async function computeCalibration() {
+            if (!calibActive) return;
+            const result = await sendCommand('guided_calib_compute', {camera: currentCamera});
+            const box = document.getElementById('result-box');
+            box.style.display = 'block';
+            if (result && result.status === 'ok') {
+                const err = result.reprojError;
+                const quality = err < 0.02 ? '優' : err < 0.05 ? '良' : '差';
+                const cls = err < 0.02 ? 'good' : err < 0.05 ? 'ok' : 'bad';
+                box.className = 'result-box ' + cls;
+                box.innerHTML = `重投影誤差: <strong>${err.toFixed(4)}</strong> (${quality}) — 使用 ${result.pointCount} 個校準點 (RANSAC)`;
+                lastComputeResult = result;
+                document.getElementById('btn-save').disabled = false;
+                updateGuide(7);
+            } else {
+                box.className = 'result-box bad';
+                box.textContent = '計算失敗: ' + (result ? result.message : '連線錯誤');
+                document.getElementById('btn-save').disabled = true;
+            }
+        }
+
+        async function saveCalibration() {
+            if (!lastComputeResult) return;
+            const result = await sendCommand('guided_calib_save', {camera: currentCamera});
+            if (result && result.status === 'ok') {
+                alert(`Camera ${currentCamera} 校準已儲存並套用！\n可繼續校準另一台相機，或關閉此頁面。`);
+            }
+        }
+
+        // ============================================================
+        // UI 輔助
+        // ============================================================
+        function addConfirmedDot(x, y, index) {
+            const frame = document.getElementById('screen-frame');
+            const dot = document.createElement('div');
+            dot.className = 'confirmed-dot';
+            dot.style.left = ((x + 1.0) / 2.0 * 100) + '%';
+            dot.style.top = ((1.0 - y) / 2.0 * 100) + '%';
+            dot.innerHTML = `<span>${index}</span>`;
+            frame.appendChild(dot);
+        }
+        function removeLastConfirmedDot() {
+            const dots = document.querySelectorAll('.confirmed-dot');
+            if (dots.length > 0) dots[dots.length - 1].remove();
+        }
+        function clearConfirmedDots() {
+            document.querySelectorAll('.confirmed-dot').forEach(d => d.remove());
+            const table = document.getElementById('points-table');
+            while (table.rows.length > 1) table.deleteRow(1);
+        }
+        function addTableRow(index, raw, corrected) {
+            const table = document.getElementById('points-table');
+            const row = table.insertRow();
+            row.innerHTML = `<td>${index}</td><td>(${raw.x.toFixed(1)}, ${raw.y.toFixed(1)})</td><td>(${corrected.x.toFixed(4)}, ${corrected.y.toFixed(4)})</td>`;
+        }
+        function removeLastTableRow() {
+            const table = document.getElementById('points-table');
+            if (table.rows.length > 1) table.deleteRow(table.rows.length - 1);
+        }
+        function setStep(val, el) {
+            stepSize = val;
+            document.querySelectorAll('.step-buttons .btn').forEach(b => b.classList.remove('active-step'));
+            if (el) el.classList.add('active-step');
+        }
+        function updateStatus(text, active) {
+            const el = document.getElementById('status-bar');
+            el.textContent = text;
+            el.className = 'status' + (active ? ' active' : '');
+        }
+
+        // ============================================================
+        // 鍵盤快捷鍵
+        // ============================================================
+        document.addEventListener('keydown', (e) => {
+            if (!calibActive) return;
+            const mult = e.shiftKey ? 5 : 1;
+            switch(e.key) {
+                case 'ArrowLeft':  moveCrosshair(-stepSize * mult, 0); e.preventDefault(); break;
+                case 'ArrowRight': moveCrosshair(stepSize * mult, 0); e.preventDefault(); break;
+                case 'ArrowUp':    moveCrosshair(0, stepSize * mult); e.preventDefault(); break;
+                case 'ArrowDown':  moveCrosshair(0, -stepSize * mult); e.preventDefault(); break;
+                case 'Enter':      confirmPoint(); e.preventDefault(); break;
+                case 'z': case 'Z': if (!e.ctrlKey) { undoPoint(); e.preventDefault(); } break;
+            }
+        });
+
+        // 初始化
+        updateGuide(0);
+    </script>
+</body>
+</html>

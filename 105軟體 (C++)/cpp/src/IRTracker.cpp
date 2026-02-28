@@ -354,7 +354,22 @@ json IRTracker::getState() {
             {"countB", count_b},
             {"isCalibrating", is_calibrating_.load()},
             {"reprojErrorA", calib_reproj_error_a_},
-            {"reprojErrorB", calib_reproj_error_b_}}}};
+            {"reprojErrorB", calib_reproj_error_b_}}},
+          {"guidedCalib", [&]() -> json {
+            if (!guided_calib_active_) return {{"active", false}};
+            std::lock_guard<std::mutex> lock(guided_mutex_);
+            return {{"active", true},
+                    {"camera", std::string(1, guided_calib_camera_)},
+                    {"hasDetection", guided_has_detection_.load()},
+                    {"rawPixelX", guided_raw_avg_.x},
+                    {"rawPixelY", guided_raw_avg_.y},
+                    {"estimatedX", guided_estimated_.x},
+                    {"estimatedY", guided_estimated_.y},
+                    {"displayX", guided_display_.x},
+                    {"displayY", guided_display_.y},
+                    {"pointsA", (int)guided_pairs_a_.size()},
+                    {"pointsB", (int)guided_pairs_b_.size()}};
+          }()}};
 }
 
 void IRTracker::setShooterZeroing(int id, double x, double y) {
@@ -534,6 +549,44 @@ void IRTracker::processingLoop() {
     if (impl_->cam_a->grab(frame_a)) {
       auto points = impl_->detector.detect(frame_a);
       for (const auto &p : points) {
+        // 引導式校準模式 (Camera A)
+        if (guided_calib_active_ && guided_calib_camera_ == 'A') {
+          std::lock_guard<std::mutex> lock(guided_mutex_);
+          guided_raw_buffer_.push_back(cv::Point2f((float)p.x, (float)p.y));
+          if (guided_raw_buffer_.size() > 30)
+            guided_raw_buffer_.erase(guided_raw_buffer_.begin());
+          // 計算過濾後的平均值
+          cv::Point2f sum(0, 0);
+          for (const auto &pt : guided_raw_buffer_) sum += pt;
+          cv::Point2f mean = sum * (1.0f / (float)guided_raw_buffer_.size());
+          float sqx = 0, sqy = 0;
+          for (const auto &pt : guided_raw_buffer_) {
+            sqx += (pt.x - mean.x) * (pt.x - mean.x);
+            sqy += (pt.y - mean.y) * (pt.y - mean.y);
+          }
+          float sx = std::sqrt(sqx / (float)guided_raw_buffer_.size());
+          float sy = std::sqrt(sqy / (float)guided_raw_buffer_.size());
+          cv::Point2f fsum(0, 0); int fc = 0;
+          for (const auto &pt : guided_raw_buffer_) {
+            if (std::abs(pt.x - mean.x) <= 1.5f * sx + 0.5f &&
+                std::abs(pt.y - mean.y) <= 1.5f * sy + 0.5f) {
+              fsum += pt; fc++;
+            }
+          }
+          guided_raw_avg_ = (fc > 0) ? fsum * (1.0f / (float)fc) : mean;
+          // 透過現有 homography 估計位置
+          if (impl_->calibrated_a && !impl_->homography_a.empty()) {
+            std::vector<cv::Point2f> s = {guided_raw_avg_}, d;
+            cv::perspectiveTransform(s, d, impl_->homography_a);
+            guided_estimated_ = d[0];
+          } else {
+            guided_estimated_.x = (guided_raw_avg_.x / 640.0f) * 2.0f - 1.0f;
+            guided_estimated_.y = 1.0f - (guided_raw_avg_.y / 480.0f) * 2.0f;
+          }
+          guided_has_detection_ = true;
+          guided_detection_time_ = std::chrono::steady_clock::now();
+          continue;
+        }
         if (is_calibrating_) {
           auto now = std::chrono::steady_clock::now();
           // 冷卻時間內或已經集滿 4 點就不再收集
@@ -758,6 +811,42 @@ void IRTracker::processingLoop() {
     if (impl_->cam_b->grab(frame_b)) {
       auto points = impl_->detector.detect(frame_b);
       for (const auto &p : points) {
+        // 引導式校準模式 (Camera B)
+        if (guided_calib_active_ && guided_calib_camera_ == 'B') {
+          std::lock_guard<std::mutex> lock(guided_mutex_);
+          guided_raw_buffer_.push_back(cv::Point2f((float)p.x, (float)p.y));
+          if (guided_raw_buffer_.size() > 30)
+            guided_raw_buffer_.erase(guided_raw_buffer_.begin());
+          cv::Point2f sum(0, 0);
+          for (const auto &pt : guided_raw_buffer_) sum += pt;
+          cv::Point2f mean = sum * (1.0f / (float)guided_raw_buffer_.size());
+          float sqx = 0, sqy = 0;
+          for (const auto &pt : guided_raw_buffer_) {
+            sqx += (pt.x - mean.x) * (pt.x - mean.x);
+            sqy += (pt.y - mean.y) * (pt.y - mean.y);
+          }
+          float sx = std::sqrt(sqx / (float)guided_raw_buffer_.size());
+          float sy = std::sqrt(sqy / (float)guided_raw_buffer_.size());
+          cv::Point2f fsum(0, 0); int fc = 0;
+          for (const auto &pt : guided_raw_buffer_) {
+            if (std::abs(pt.x - mean.x) <= 1.5f * sx + 0.5f &&
+                std::abs(pt.y - mean.y) <= 1.5f * sy + 0.5f) {
+              fsum += pt; fc++;
+            }
+          }
+          guided_raw_avg_ = (fc > 0) ? fsum * (1.0f / (float)fc) : mean;
+          if (impl_->calibrated_b && !impl_->homography_b.empty()) {
+            std::vector<cv::Point2f> s = {guided_raw_avg_}, d;
+            cv::perspectiveTransform(s, d, impl_->homography_b);
+            guided_estimated_ = d[0];
+          } else {
+            guided_estimated_.x = (guided_raw_avg_.x / 640.0f) * 2.0f - 1.0f;
+            guided_estimated_.y = 1.0f - (guided_raw_avg_.y / 480.0f) * 2.0f;
+          }
+          guided_has_detection_ = true;
+          guided_detection_time_ = std::chrono::steady_clock::now();
+          continue;
+        }
         if (is_calibrating_) {
           auto now = std::chrono::steady_clock::now();
           if (std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -985,6 +1074,17 @@ void IRTracker::processingLoop() {
         is_calibrating_ = false;
     }
 
+    // 引導式校準：偵測逾時（500ms 無 IR 光點）
+    if (guided_calib_active_ && guided_has_detection_) {
+      auto now = std::chrono::steady_clock::now();
+      if (std::chrono::duration_cast<std::chrono::milliseconds>(
+              now - guided_detection_time_).count() > 500) {
+        guided_has_detection_ = false;
+        std::lock_guard<std::mutex> lock(guided_mutex_);
+        guided_raw_buffer_.clear();
+      }
+    }
+
     std::this_thread::sleep_for(std::chrono::milliseconds(10));
   }
 }
@@ -1047,6 +1147,115 @@ json IRTracker::getCalibrationStatus() {
                    {"last_error", status_b.last_error}}}};
 
   return result;
+}
+
+// ============================================================================
+// 引導式校準實作
+// ============================================================================
+
+void IRTracker::startGuidedCalibration(char camera) {
+  guided_calib_camera_ = camera;
+  guided_calib_active_ = true;
+  guided_has_detection_ = false;
+  {
+    std::lock_guard<std::mutex> lock(guided_mutex_);
+    guided_raw_buffer_.clear();
+    guided_raw_avg_ = {0, 0};
+    guided_estimated_ = {0, 0};
+    guided_display_ = {0, 0};
+  }
+  std::cout << "[GUIDED] Started guided calibration for Camera " << camera << std::endl;
+}
+
+void IRTracker::stopGuidedCalibration() {
+  guided_calib_active_ = false;
+  guided_has_detection_ = false;
+  {
+    std::lock_guard<std::mutex> lock(guided_mutex_);
+    guided_raw_buffer_.clear();
+  }
+  std::cout << "[GUIDED] Stopped guided calibration" << std::endl;
+}
+
+void IRTracker::setGuidedDisplay(float x, float y) {
+  std::lock_guard<std::mutex> lock(guided_mutex_);
+  guided_display_ = cv::Point2f(x, y);
+}
+
+json IRTracker::confirmGuidedPoint(char camera, float rawX, float rawY, float corrX, float corrY) {
+  std::lock_guard<std::mutex> lock(guided_mutex_);
+  auto& pairs = (camera == 'A') ? guided_pairs_a_ : guided_pairs_b_;
+  pairs.push_back({cv::Point2f(rawX, rawY), cv::Point2f(corrX, corrY)});
+  int idx = (int)pairs.size();
+  std::cout << "[GUIDED] Camera " << camera << " point " << idx
+            << ": raw=(" << rawX << "," << rawY << ") -> corr=(" << corrX << "," << corrY << ")" << std::endl;
+  return {{"status", "ok"}, {"pointIndex", idx}, {"pointCount", idx}};
+}
+
+json IRTracker::undoGuidedPoint(char camera) {
+  std::lock_guard<std::mutex> lock(guided_mutex_);
+  auto& pairs = (camera == 'A') ? guided_pairs_a_ : guided_pairs_b_;
+  if (!pairs.empty()) pairs.pop_back();
+  return {{"status", "ok"}, {"pointCount", (int)pairs.size()}};
+}
+
+json IRTracker::computeGuidedCalibration(char camera) {
+  std::lock_guard<std::mutex> lock(guided_mutex_);
+  auto& pairs = (camera == 'A') ? guided_pairs_a_ : guided_pairs_b_;
+  auto& result_h = (camera == 'A') ? guided_homography_a_ : guided_homography_b_;
+
+  if (pairs.size() < 4) {
+    return {{"status", "error"}, {"message", "至少需要 4 個校準點，目前只有 " + std::to_string(pairs.size()) + " 個"}};
+  }
+
+  std::vector<cv::Point2f> src_pts, dst_pts;
+  for (const auto& p : pairs) {
+    src_pts.push_back(p.first);   // raw camera pixels
+    dst_pts.push_back(p.second);  // corrected normalized coordinates
+  }
+
+  result_h = cv::findHomography(src_pts, dst_pts, cv::RANSAC, 3.0);
+
+  if (result_h.empty()) {
+    return {{"status", "error"}, {"message", "Homography 計算失敗"}};
+  }
+
+  // 計算重投影誤差
+  std::vector<cv::Point2f> reproj;
+  cv::perspectiveTransform(src_pts, reproj, result_h);
+  double total_err = 0;
+  for (size_t i = 0; i < pairs.size(); i++) {
+    double dx = reproj[i].x - dst_pts[i].x;
+    double dy = reproj[i].y - dst_pts[i].y;
+    total_err += std::sqrt(dx * dx + dy * dy);
+  }
+  double avg_err = total_err / (double)pairs.size();
+
+  std::cout << "[GUIDED] Camera " << camera << " Homography computed. Points=" << pairs.size()
+            << " ReprojError=" << avg_err << std::endl;
+
+  return {{"status", "ok"}, {"reprojError", avg_err}, {"pointCount", (int)pairs.size()}};
+}
+
+void IRTracker::saveGuidedCalibration(char camera) {
+  std::lock_guard<std::mutex> lock(guided_mutex_);
+  auto& h = (camera == 'A') ? guided_homography_a_ : guided_homography_b_;
+
+  if (h.empty()) return;
+
+  if (camera == 'A') {
+    impl_->homography_a = h.clone();
+    impl_->calibrated_a = true;
+    impl_->saveCalibration("calibration_a.json", impl_->homography_a);
+    calib_reproj_error_a_ = 0; // Will be recalculated
+    std::cout << "[GUIDED] Camera A calibration saved and applied" << std::endl;
+  } else {
+    impl_->homography_b = h.clone();
+    impl_->calibrated_b = true;
+    impl_->saveCalibration("calibration_b.json", impl_->homography_b);
+    calib_reproj_error_b_ = 0;
+    std::cout << "[GUIDED] Camera B calibration saved and applied" << std::endl;
+  }
 }
 
 } // namespace T91

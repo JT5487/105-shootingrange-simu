@@ -417,6 +417,40 @@ int main() {
           json calib_status = tracker.getCalibrationStatus();
           res.set_content(json({{"status", "ok"}, {"data", calib_status}}).dump(), "application/json");
         }
+        // 引導式校準端點
+        else if (action == "start_guided_calibration") {
+          char cam = data.value("camera", "A")[0];
+          tracker.startGuidedCalibration(cam);
+          res.set_content(json({{"status", "ok"}}).dump(), "application/json");
+        } else if (action == "stop_guided_calibration") {
+          tracker.stopGuidedCalibration();
+          res.set_content(json({{"status", "ok"}}).dump(), "application/json");
+        } else if (action == "guided_calib_set_display") {
+          float x = data["x"].get<float>();
+          float y = data["y"].get<float>();
+          tracker.setGuidedDisplay(x, y);
+          res.set_content(json({{"status", "ok"}}).dump(), "application/json");
+        } else if (action == "guided_calib_confirm_point") {
+          char cam = data.value("camera", "A")[0];
+          float rawX = data["rawX"].get<float>();
+          float rawY = data["rawY"].get<float>();
+          float corrX = data["correctedX"].get<float>();
+          float corrY = data["correctedY"].get<float>();
+          json result = tracker.confirmGuidedPoint(cam, rawX, rawY, corrX, corrY);
+          res.set_content(result.dump(), "application/json");
+        } else if (action == "guided_calib_undo_point") {
+          char cam = data.value("camera", "A")[0];
+          json result = tracker.undoGuidedPoint(cam);
+          res.set_content(result.dump(), "application/json");
+        } else if (action == "guided_calib_compute") {
+          char cam = data.value("camera", "A")[0];
+          json result = tracker.computeGuidedCalibration(cam);
+          res.set_content(result.dump(), "application/json");
+        } else if (action == "guided_calib_save") {
+          char cam = data.value("camera", "A")[0];
+          tracker.saveGuidedCalibration(cam);
+          res.set_content(json({{"status", "ok"}}).dump(), "application/json");
+        }
         else if (action == "shutdown_system") {
           std::cout << "\n[SYSTEM] Shutdown command received. Cleaning up...\n"
                     << std::endl;

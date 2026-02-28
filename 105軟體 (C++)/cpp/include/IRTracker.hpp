@@ -66,9 +66,18 @@ public:
   void startCalibration(); // 手動校準（舊方式）
 
   // 功能 B4：新增自動校準介面
-  void startAutoCalibrationA(); // 開始 Camera A 自動校準
-  void startAutoCalibrationB(); // 開始 Camera B 自動校準
-  json getCalibrationStatus();  // 取得校準狀態
+  void startAutoCalibrationA();
+  void startAutoCalibrationB();
+  json getCalibrationStatus();
+
+  // 引導式校準 (多點雷射校準)
+  void startGuidedCalibration(char camera);
+  void stopGuidedCalibration();
+  void setGuidedDisplay(float x, float y);
+  json confirmGuidedPoint(char camera, float rawX, float rawY, float corrX, float corrY);
+  json undoGuidedPoint(char camera);
+  json computeGuidedCalibration(char camera);
+  void saveGuidedCalibration(char camera);
 
   void startScoring() {
     scoring_enabled_ = true;
@@ -186,8 +195,22 @@ private:
   std::vector<cv::Point2f> avg_buffer_a_,
       avg_buffer_b_;  // 新增：用於平均校正點的緩衝區
   int avg_limit_ = 15; // 平均 15 幀以提升精度（原 5 幀不足以消除手持抖動）
-  double calib_reproj_error_a_ = -1.0; // 校準重投影誤差（-1 表示未計算）
+  double calib_reproj_error_a_ = -1.0;
   double calib_reproj_error_b_ = -1.0;
+
+  // 引導式校準狀態
+  std::atomic<bool> guided_calib_active_{false};
+  char guided_calib_camera_ = 'A';
+  std::mutex guided_mutex_;
+  cv::Point2f guided_raw_avg_{0, 0};
+  cv::Point2f guided_estimated_{0, 0};
+  cv::Point2f guided_display_{0, 0};
+  std::atomic<bool> guided_has_detection_{false};
+  std::chrono::steady_clock::time_point guided_detection_time_;
+  std::vector<cv::Point2f> guided_raw_buffer_;
+  std::vector<std::pair<cv::Point2f, cv::Point2f>> guided_pairs_a_;
+  std::vector<std::pair<cv::Point2f, cv::Point2f>> guided_pairs_b_;
+  cv::Mat guided_homography_a_, guided_homography_b_; // 計算結果（尚未儲存）
   
   // 校準目標座標：修正為 (5%, 95%) 實際位置，避免 10% 邊緣偏差
   // 物理尺寸: Camera A: 390×225cm @ 430cm, Camera B: 402×225cm @ 440cm
