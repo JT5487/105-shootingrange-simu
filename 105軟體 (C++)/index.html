@@ -558,6 +558,98 @@
                     max-width: none !important;
                 }
             }
+
+            /* === 工程模式 (Engineering Mode) 樣式 === */
+            #engineering-overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.85);
+                z-index: 9999;
+                justify-content: center;
+                align-items: flex-start;
+                padding: 30px;
+                overflow-y: auto;
+            }
+            #engineering-overlay.active {
+                display: flex;
+            }
+            .engineering-modal {
+                background: #1a1a2e;
+                border: 2px solid #f39c12;
+                border-radius: 12px;
+                max-width: 650px;
+                width: 100%;
+                max-height: 90vh;
+                overflow-y: auto;
+                padding: 25px;
+                color: #e0e0e0;
+            }
+            .engineering-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 20px;
+                padding-bottom: 12px;
+                border-bottom: 2px solid #f39c12;
+            }
+            .engineering-header h2 {
+                color: #f39c12;
+                margin: 0;
+                font-size: 1.4em;
+            }
+            .engineering-close {
+                background: #e74c3c;
+                border: none;
+                color: #fff;
+                font-size: 1.5em;
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .engineering-close:hover {
+                background: #c0392b;
+            }
+            .engineering-section {
+                background: rgba(255,255,255,0.03);
+                border: 1px solid rgba(243,156,18,0.3);
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            .engineering-section h3 {
+                color: #f39c12;
+                font-size: 1em;
+                margin: 0 0 12px 0;
+            }
+            .engineering-section .btn {
+                margin-bottom: 6px;
+            }
+            .eng-slider-group {
+                margin-bottom: 12px;
+            }
+            .eng-slider-group label {
+                font-size: 0.85em;
+                color: #aaa;
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 4px;
+            }
+            .eng-slider-group input[type='range'] {
+                width: 100%;
+            }
+            .eng-slider-ticks {
+                display: flex;
+                justify-content: space-between;
+                font-size: 0.7em;
+                color: #666;
+                margin-top: 2px;
+            }
+
         </style>
         <script src="./xlsx.full.min.js"></script>
     </head>
@@ -864,36 +956,6 @@
                             >
                                 300公尺射擊
                             </button>
-                        </div>
-                    </div>
-
-                    <div class="panel">
-                        <h2 style="margin-bottom: 5px">IR 偵測設定</h2>
-                        <div
-                            style="
-                                display: flex;
-                                align-items: center;
-                                gap: 10px;
-                            "
-                        >
-                            <span
-                                style="
-                                    font-size: 0.85em;
-                                    color: #aaa;
-                                    white-space: nowrap;
-                                "
-                                >靈敏度(<span id="threshold-val">200</span
-                                >):</span
-                            >
-                            <input
-                                type="range"
-                                id="detection-threshold"
-                                min="0"
-                                max="255"
-                                value="200"
-                                style="flex: 1; height: 15px"
-                                oninput="updateThreshold(this.value)"
-                            />
                         </div>
                     </div>
 
@@ -1348,36 +1410,6 @@
                             <button
                                 class="btn btn-primary"
                                 style="padding: 10px"
-                                onclick="startCalibration()"
-                            >
-                                手動校準
-                            </button>
-                            <button
-                                class="btn"
-                                style="padding: 10px; background-color: #9b59b6"
-                                onclick="startAutoCalibrationA()"
-                            >
-                                🎯 自動校準 A
-                            </button>
-                            <button
-                                class="btn"
-                                style="padding: 10px; background-color: #9b59b6"
-                                onclick="startAutoCalibrationB()"
-                            >
-                                🎯 自動校準 B
-                            </button>
-                            <button
-                                class="btn"
-                                style="padding: 10px; background-color: #e67e22"
-                                onclick="window.open('calibration_tool.html', '_blank', 'width=1200,height=800')"
-                            >
-                                🔧 引導式校準
-                            </button>
-                            <span id="calib-progress" style="color: #f1c40f; font-size: 12px; margin-left: 8px;"></span>
-                            <span id="calib-quality" style="font-size: 12px; margin-left: 8px;">未校準</span>
-                            <button
-                                class="btn btn-primary"
-                                style="padding: 10px"
                                 onclick="applySettings()"
                             >
                                 套用設定
@@ -1417,436 +1449,6 @@
                                 🔊 測試音效
                             </button>
                         </div>
-                    </div>
-
-                    <!-- 雷射信號監測面板已移除 -->
-
-                    <!-- 靶板調整面板 -->
-                    <div class="panel">
-                        <h2>🎯 靶板調整</h2>
-
-                        <!-- 靶板縮放 -->
-                        <div style="margin-bottom: 15px">
-                            <label
-                                style="
-                                    font-size: 0.9em;
-                                    color: #aaa;
-                                    display: flex;
-                                    justify-content: space-between;
-                                "
-                            >
-                                <span>靶板縮放:</span>
-                                <span id="scale-value" style="color: #00d4ff"
-                                    >100%</span
-                                >
-                            </label>
-                            <input
-                                type="range"
-                                id="target-scale"
-                                min="50"
-                                max="200"
-                                value="100"
-                                style="width: 100%; margin-top: 5px"
-                                oninput="updateTargetScale(this.value)"
-                            />
-                            <div
-                                style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    font-size: 0.75em;
-                                    color: #666;
-                                    margin-top: 2px;
-                                "
-                            >
-                                <span>50%</span>
-                                <span>200%</span>
-                            </div>
-                        </div>
-
-                        <!-- 垂直位置 -->
-                        <div style="margin-bottom: 15px">
-                            <label
-                                style="
-                                    font-size: 0.9em;
-                                    color: #aaa;
-                                    display: flex;
-                                    justify-content: space-between;
-                                "
-                            >
-                                <span>垂直位置:</span>
-                                <span id="vertical-value" style="color: #00d4ff"
-                                    >0%</span
-                                >
-                            </label>
-                            <input
-                                type="range"
-                                id="target-vertical"
-                                min="-20"
-                                max="20"
-                                value="0"
-                                style="width: 100%; margin-top: 5px"
-                                oninput="updateTargetVertical(this.value)"
-                            />
-                            <div
-                                style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    font-size: 0.75em;
-                                    color: #666;
-                                    margin-top: 2px;
-                                "
-                            >
-                                <span>↑ 上移</span>
-                                <span>↓ 下移</span>
-                            </div>
-                        </div>
-
-                        <!-- 水平間距 -->
-                        <div style="margin-bottom: 15px">
-                            <label
-                                style="
-                                    font-size: 0.9em;
-                                    color: #aaa;
-                                    display: flex;
-                                    justify-content: space-between;
-                                "
-                            >
-                                <span>水平間距:</span>
-                                <span id="spacing-value" style="color: #00d4ff"
-                                    >100%</span
-                                >
-                            </label>
-                            <input
-                                type="range"
-                                id="target-spacing"
-                                min="-150"
-                                max="150"
-                                value="100"
-                                style="width: 100%; margin-top: 5px"
-                                oninput="updateTargetSpacing(this.value)"
-                            />
-                            <div
-                                style="
-                                    display: flex;
-                                    justify-content: space-between;
-                                    font-size: 0.75em;
-                                    color: #666;
-                                    margin-top: 2px;
-                                "
-                            >
-                                <span>重疊</span>
-                                <span>寬鬆</span>
-                            </div>
-                        </div>
-
-                        <!-- 邊緣間距已移除 -- 校準座標 ±0.9 已處理邊緣留白 -->
-
-                        <!-- 彈著修正 (歸零) 已移除 -- 改用全域彈著修正 + 射手個別歸零 -->
-
-                        <!-- 射手個別歸零與槍枝鑑定 -->
-                        <div
-                            style="
-                                margin-top: 20px;
-                                padding-top: 15px;
-                                border-top: 2px solid #f1c40f;
-                                background: rgba(241, 196, 15, 0.05);
-                                padding: 15px;
-                                border-radius: 8px;
-                            "
-                        >
-                            <h3
-                                style="
-                                    color: #f1c40f;
-                                    font-size: 0.9em;
-                                    margin-bottom: 5px;
-                                "
-                            >
-                                🔫 射手個別歸零與槍枝鑑定
-                            </h3>
-                            <p
-                                style="
-                                    font-size: 0.7em;
-                                    color: #888;
-                                    margin-bottom: 10px;
-                                "
-                            >
-                                為每把槍設定專屬的強度特徵與彈著修正。
-                            </p>
-
-                            <div
-                                style="
-                                    margin-bottom: 10px;
-                                    display: flex;
-                                    align-items: center;
-                                    gap: 10px;
-                                "
-                            >
-                                <label
-                                    style="
-                                        font-size: 0.8em;
-                                        white-space: nowrap;
-                                    "
-                                    >選擇射手:</label
-                                >
-                                <select
-                                    id="shooter-select"
-                                    class="info-input"
-                                    style="
-                                        flex: 1;
-                                        padding: 8px;
-                                        font-size: 1em;
-                                        min-height: 36px;
-                                        background-color: #1a1a2e;
-                                        color: #00d4ff;
-                                    "
-                                    onchange="onShooterSelectChange(this.value)"
-                                >
-                                    <option
-                                        value="1"
-                                        style="
-                                            background-color: #1a1a2e;
-                                            color: #00d4ff;
-                                        "
-                                    >
-                                        1號射手 (槍枝 1)
-                                    </option>
-                                    <option
-                                        value="2"
-                                        style="
-                                            background-color: #1a1a2e;
-                                            color: #00d4ff;
-                                        "
-                                    >
-                                        2號射手 (槍枝 2)
-                                    </option>
-                                    <option
-                                        value="3"
-                                        style="
-                                            background-color: #1a1a2e;
-                                            color: #00d4ff;
-                                        "
-                                    >
-                                        3號射手 (槍枝 3)
-                                    </option>
-                                    <option
-                                        value="4"
-                                        style="
-                                            background-color: #1a1a2e;
-                                            color: #00d4ff;
-                                        "
-                                    >
-                                        4號射手 (槍枝 4)
-                                    </option>
-                                    <option
-                                        value="5"
-                                        style="
-                                            background-color: #1a1a2e;
-                                            color: #00d4ff;
-                                        "
-                                    >
-                                        5號射手 (槍枝 5)
-                                    </option>
-                                    <option
-                                        value="6"
-                                        style="
-                                            background-color: #1a1a2e;
-                                            color: #00d4ff;
-                                        "
-                                    >
-                                        6號射手 (槍枝 6)
-                                    </option>
-                                </select>
-                            </div>
-
-                            <!-- 目前距離顯示 -->
-                            <div
-                                style="
-                                    background: rgba(0, 212, 255, 0.2);
-                                    padding: 8px;
-                                    border-radius: 5px;
-                                    margin-bottom: 10px;
-                                    text-align: center;
-                                "
-                            >
-                                <span style="font-size: 0.8em; color: #aaa"
-                                    >目前編輯距離：</span
-                                >
-                                <span
-                                    id="current-zeroing-distance"
-                                    style="
-                                        font-size: 1.2em;
-                                        font-weight: bold;
-                                        color: #00d4ff;
-                                    "
-                                    >25m</span
-                                >
-                            </div>
-
-                            <div
-                                style="
-                                    background: rgba(0, 0, 0, 0.2);
-                                    padding: 10px;
-                                    border-radius: 5px;
-                                    margin-bottom: 10px;
-                                "
-                            >
-                                <!-- 強度辨識相關 UI 已移除 -->
-
-                                <div style="margin-bottom: 8px">
-                                    <label
-                                        style="
-                                            font-size: 0.75em;
-                                            color: #aaa;
-                                            display: flex;
-                                            justify-content: space-between;
-                                        "
-                                    >
-                                        <span>個別 X 偏移:</span>
-                                        <span
-                                            id="shooter-zx-display"
-                                            style="color: #00d4ff"
-                                            >0.000</span
-                                        >
-                                    </label>
-                                    <input
-                                        type="range"
-                                        id="shooter-zx"
-                                        min="-0.5"
-                                        max="0.5"
-                                        step="0.001"
-                                        value="0"
-                                        style="width: 100%"
-                                        oninput="updateShooterZeroing()"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label
-                                        style="
-                                            font-size: 0.75em;
-                                            color: #aaa;
-                                            display: flex;
-                                            justify-content: space-between;
-                                        "
-                                    >
-                                        <span>個別 Y 偏移:</span>
-                                        <span
-                                            id="shooter-zy-display"
-                                            style="color: #00d4ff"
-                                            >0.000</span
-                                        >
-                                    </label>
-                                    <input
-                                        type="range"
-                                        id="shooter-zy"
-                                        min="-0.5"
-                                        max="0.5"
-                                        step="0.001"
-                                        value="0"
-                                        style="width: 100%"
-                                        oninput="updateShooterZeroing()"
-                                    />
-                                </div>
-                            </div>
-
-                            <!-- 強度特徵自動辨識 UI 已移除 -->
-                        </div>
-
-                        <!-- 全域彈著修正 (系統歸零) -->
-                        <div
-                            style="
-                                margin-top: 20px;
-                                padding-top: 15px;
-                                border-top: 2px solid #00d4ff;
-                                background: rgba(0, 212, 255, 0.05);
-                                padding: 15px;
-                                border-radius: 8px;
-                            "
-                        >
-                            <h3
-                                style="
-                                    font-size: 0.9em;
-                                    color: #00d4ff;
-                                    margin-bottom: 5px;
-                                "
-                            >
-                                🌍 全域彈著修正 (系統歸零)
-                            </h3>
-                            <p
-                                style="
-                                    font-size: 0.7em;
-                                    color: #888;
-                                    margin-bottom: 10px;
-                                "
-                            >
-                                此設定將套用到「所有」射擊模式與距離。
-                            </p>
-
-                            <div style="margin-bottom: 15px">
-                                <label
-                                    style="
-                                        font-size: 0.85em;
-                                        color: #aaa;
-                                        display: flex;
-                                        justify-content: space-between;
-                                    "
-                                >
-                                    <span>全域左右偏移 (X):</span>
-                                    <span
-                                        id="global-zeroing-x-value"
-                                        style="color: #00d4ff"
-                                        >0.00</span
-                                    >
-                                </label>
-                                <input
-                                    type="range"
-                                    id="global-zeroing-x"
-                                    min="-1.0"
-                                    max="1.0"
-                                    step="0.01"
-                                    value="0.00"
-                                    style="width: 100%; margin-top: 5px"
-                                    oninput="updateGlobalZeroingX(this.value)"
-                                />
-                            </div>
-
-                            <div style="margin-bottom: 10px">
-                                <label
-                                    style="
-                                        font-size: 0.85em;
-                                        color: #aaa;
-                                        display: flex;
-                                        justify-content: space-between;
-                                    "
-                                >
-                                    <span>全域上下偏移 (Y):</span>
-                                    <span
-                                        id="global-zeroing-y-value"
-                                        style="color: #00d4ff"
-                                        >0.00</span
-                                    >
-                                </label>
-                                <input
-                                    type="range"
-                                    id="global-zeroing-y"
-                                    min="-1.0"
-                                    max="1.0"
-                                    step="0.01"
-                                    value="0.00"
-                                    style="width: 100%; margin-top: 5px"
-                                    oninput="updateGlobalZeroingY(this.value)"
-                                />
-                            </div>
-                        </div>
-
-                        <!-- 儲存設定按鈕 -->
-                        <button
-                            class="btn btn-success"
-                            style="width: 100%; padding: 10px; margin-top: 5px"
-                            onclick="saveTargetSettings()"
-                        >
-                            💾 儲存所有調整
-                        </button>
                     </div>
                 </div>
             </div>
@@ -1941,6 +1543,101 @@
         </audio>
         <!-- 新增：隱藏的 SOP 播放器 -->
         <audio id="sop-audio-player" preload="auto"></audio>
+
+
+        <!-- 工程模式 overlay -->
+        <div id="engineering-overlay">
+            <div class="engineering-modal">
+                <div class="engineering-header">
+                    <h2>🔧 工程模式</h2>
+                    <button class="engineering-close" onclick="closeEngineeringMode()" title="關閉工程模式">✕</button>
+                </div>
+
+                <!-- 📷 校準設定 -->
+                <div class="engineering-section">
+                    <h3>📷 校準設定</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <button class="btn btn-primary" style="padding: 10px" onclick="startCalibration()">手動校準</button>
+                        <button class="btn" style="padding: 10px; background-color: #9b59b6" onclick="startAutoCalibrationA()">🎯 自動校準 A</button>
+                        <button class="btn" style="padding: 10px; background-color: #9b59b6" onclick="startAutoCalibrationB()">🎯 自動校準 B</button>
+                        <button class="btn" style="padding: 10px; background-color: #e67e22" onclick="window.open('calibration_tool.html', '_blank', 'width=1200,height=800')">🔧 引導式校準</button>
+                    </div>
+                    <div style="margin-top: 8px; font-size: 12px;">
+                        <span id="calib-progress" style="color: #f1c40f; margin-right: 8px;"></span>
+                        <span id="calib-quality" style="">未校準</span>
+                    </div>
+                </div>
+
+                <!-- IR 偵測設定 -->
+                <div class="engineering-section">
+                    <h3>🔍 IR 偵測設定</h3>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <span style="font-size: 0.85em; color: #aaa; white-space: nowrap;">靈敏度(<span id="threshold-val">200</span>):</span>
+                        <input type="range" id="detection-threshold" min="0" max="255" value="200" style="flex: 1; height: 15px;" oninput="updateThreshold(this.value)" />
+                    </div>
+                </div>
+
+                <!-- 🎯 靶板調整 -->
+                <div class="engineering-section">
+                    <h3>🎯 靶板調整</h3>
+                    <div class="eng-slider-group">
+                        <label><span>靶板縮放:</span><span id="scale-value" style="color: #00d4ff">100%</span></label>
+                        <input type="range" id="target-scale" min="50" max="200" value="100" oninput="updateTargetScale(this.value)" />
+                        <div class="eng-slider-ticks"><span>50%</span><span>200%</span></div>
+                    </div>
+                    <div class="eng-slider-group">
+                        <label><span>垂直位置:</span><span id="vertical-value" style="color: #00d4ff">0%</span></label>
+                        <input type="range" id="target-vertical" min="-20" max="20" value="0" oninput="updateTargetVertical(this.value)" />
+                        <div class="eng-slider-ticks"><span>↑ 上移</span><span>↓ 下移</span></div>
+                    </div>
+                    <div class="eng-slider-group">
+                        <label><span>水平間距:</span><span id="spacing-value" style="color: #00d4ff">100%</span></label>
+                        <input type="range" id="target-spacing" min="-150" max="150" value="100" oninput="updateTargetSpacing(this.value)" />
+                        <div class="eng-slider-ticks"><span>重疊</span><span>寬鬆</span></div>
+                    </div>
+                </div>
+
+                <!-- 🔫 射手個別歸零與槍枝鑑定 -->
+                <div class="engineering-section">
+                    <h3>🔫 射手個別歸零與槍枝鑑定</h3>
+                    <p style="font-size: 0.7em; color: #888; margin: 0 0 10px 0;">為每把槍設定專屬的強度特徵與彈著修正。</p>
+                    <div style="margin-bottom: 10px; display: flex; align-items: center; gap: 10px;">
+                        <label style="font-size: 0.8em; white-space: nowrap;">選擇射手:</label>
+                        <select id="shooter-select" class="info-input" style="flex: 1; padding: 8px; font-size: 1em; min-height: 36px; background-color: #1a1a2e; color: #00d4ff;" onchange="onShooterSelectChange(this.value)">
+                            <option value="1" style="background-color: #1a1a2e; color: #00d4ff;">1號射手 (槍枝 1)</option>
+                            <option value="2" style="background-color: #1a1a2e; color: #00d4ff;">2號射手 (槍枝 2)</option>
+                            <option value="3" style="background-color: #1a1a2e; color: #00d4ff;">3號射手 (槍枝 3)</option>
+                            <option value="4" style="background-color: #1a1a2e; color: #00d4ff;">4號射手 (槍枝 4)</option>
+                            <option value="5" style="background-color: #1a1a2e; color: #00d4ff;">5號射手 (槍枝 5)</option>
+                            <option value="6" style="background-color: #1a1a2e; color: #00d4ff;">6號射手 (槍枝 6)</option>
+                        </select>
+                    </div>
+                    <div style="background: rgba(0, 212, 255, 0.2); padding: 8px; border-radius: 5px; margin-bottom: 10px; text-align: center;">
+                        <span style="font-size: 0.8em; color: #aaa;">目前編輯距離：</span>
+                        <span id="current-zeroing-distance" style="font-size: 1.2em; font-weight: bold; color: #00d4ff;">25m</span>
+                    </div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                        <div style="margin-bottom: 8px;">
+                            <label style="font-size: 0.75em; color: #aaa; display: flex; justify-content: space-between;">
+                                <span>個別 X 偏移:</span>
+                                <span id="shooter-zx-display" style="color: #00d4ff;">0.000</span>
+                            </label>
+                            <input type="range" id="shooter-zx" min="-0.5" max="0.5" step="0.001" value="0" style="width: 100%" oninput="updateShooterZeroing()" />
+                        </div>
+                        <div>
+                            <label style="font-size: 0.75em; color: #aaa; display: flex; justify-content: space-between;">
+                                <span>個別 Y 偏移:</span>
+                                <span id="shooter-zy-display" style="color: #00d4ff;">0.000</span>
+                            </label>
+                            <input type="range" id="shooter-zy" min="-0.5" max="0.5" step="0.001" value="0" style="width: 100%" oninput="updateShooterZeroing()" />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 💾 儲存所有調整 -->
+                <button class="btn btn-success" style="width: 100%; padding: 12px; margin-top: 5px; font-size: 1.1em;" onclick="saveTargetSettings()">💾 儲存所有調整</button>
+            </div>
+        </div>
 
         <script>
             /* === 運作邏輯 (JavaScript) === */
@@ -2137,6 +1834,16 @@
             let lastShotSequence = 0;
 
             function startUpdateLoop() {
+                // 先取得目前最新 sequence，避免 reload 後重播舊槍聲
+                fetch("http://localhost:8081/shots")
+                    .then(r => r.ok ? r.json() : [])
+                    .then(shots => {
+                        if (shots.length > 0) {
+                            lastShotSequence = Math.max(...shots.map(s => s.sequence));
+                        }
+                    })
+                    .catch(() => {});
+
                 setInterval(async () => {
                     try {
                         const shotsRes = await fetch(
@@ -2744,42 +2451,9 @@
             // updateTargetEdge, updateZeroingX, updateZeroingY 已移除
             // 邊緣間距由校準座標 ±0.9 處理；彈著修正改用全域歸零 + 射手個別歸零
 
-            function updateGlobalZeroingX(value) {
-                document.getElementById("global-zeroing-x-value").textContent =
-                    parseFloat(value).toFixed(2);
-                sendGlobalZeroing();
-            }
-
-            function updateGlobalZeroingY(value) {
-                document.getElementById("global-zeroing-y-value").textContent =
-                    parseFloat(value).toFixed(2);
-                sendGlobalZeroing();
-            }
-
-            function sendGlobalZeroing() {
-                const zx = parseFloat(
-                    document.getElementById("global-zeroing-x").value,
-                );
-                const zy = parseFloat(
-                    document.getElementById("global-zeroing-y").value,
-                );
-
-                // 立即發送調整到後端
-                sendCommand("adjust_global_zeroing", {
-                    zeroingX: zx,
-                    zeroingY: zy,
-                });
-
-                // 延遲自動儲存（1 秒後）
-                clearTimeout(saveGlobalZeroingTimer);
-                saveGlobalZeroingTimer = setTimeout(() => {
-                    autoSaveTargetSettings();
-                }, 1000);
-            }
 
             // 調整計時器，避免滑桿拖動時頻繁儲存
             let saveAdjustmentTimer = null;
-            let saveGlobalZeroingTimer = null;
 
             function sendTargetAdjustment() {
                 const scale =
@@ -2856,27 +2530,6 @@
                             document.getElementById("target-spacing").value =
                                 (adj.spacing || 1) * 100;
 
-                            // 載入全域歸零
-                            if (stateData.globalZeroingX !== undefined) {
-                                document.getElementById(
-                                    "global-zeroing-x",
-                                ).value = stateData.globalZeroingX;
-                                document.getElementById(
-                                    "global-zeroing-x-value",
-                                ).textContent = parseFloat(
-                                    stateData.globalZeroingX,
-                                ).toFixed(2);
-                            }
-                            if (stateData.globalZeroingY !== undefined) {
-                                document.getElementById(
-                                    "global-zeroing-y",
-                                ).value = stateData.globalZeroingY;
-                                document.getElementById(
-                                    "global-zeroing-y-value",
-                                ).textContent = parseFloat(
-                                    stateData.globalZeroingY,
-                                ).toFixed(2);
-                            }
 
                             // 載入射手個別設定
                             if (stateData.shooters) {
@@ -3148,6 +2801,52 @@
                 if (txt) txt.textContent = "請選擇「上傳成績」或「重新畫面」";
             }
 
+
+            /* === 工程模式 (Engineering Mode) 邏輯 === */
+            let engTapCount = 0;
+            let engTapTimer = null;
+
+            function initEngineeringTapDetector() {
+                const title = document.querySelector('h1');
+                if (!title) return;
+                title.style.cursor = 'default';
+                title.style.userSelect = 'none';
+                title.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    engTapCount++;
+                    if (engTapTimer) clearTimeout(engTapTimer);
+                    if (engTapCount >= 5) {
+                        engTapCount = 0;
+                        openEngineeringMode();
+                        return;
+                    }
+                    engTapTimer = setTimeout(() => { engTapCount = 0; }, 2000);
+                });
+            }
+
+            function openEngineeringMode() {
+                const overlay = document.getElementById('engineering-overlay');
+                if (!overlay) return;
+                // 同步滑桿數值到工程模式
+                const ts = document.getElementById('target-scale');
+                const tv = document.getElementById('target-vertical');
+                const tsp = document.getElementById('target-spacing');
+                const dt = document.getElementById('detection-threshold');
+                if (ts) document.getElementById('scale-value').textContent = ts.value + '%';
+                if (tv) document.getElementById('vertical-value').textContent = tv.value + '%';
+                if (tsp) document.getElementById('spacing-value').textContent = tsp.value + '%';
+                if (dt) document.getElementById('threshold-val').textContent = dt.value;
+                // 同步射手歸零
+                const sel = document.getElementById('shooter-select');
+                if (sel) onShooterSelectChange(sel.value);
+                overlay.classList.add('active');
+            }
+
+            function closeEngineeringMode() {
+                const overlay = document.getElementById('engineering-overlay');
+                if (overlay) overlay.classList.remove('active');
+            }
+
             document.addEventListener("DOMContentLoaded", () => {
                 // 點擊任意處啟動音效 (解決瀏覽器限制)
                 document.addEventListener("click", () => {
@@ -3164,6 +2863,8 @@
                 onShooterSelectChange(
                     document.getElementById("shooter-select").value,
                 );
+                // 初始化工程模式 5-tap 偵測
+                initEngineeringTapDetector();
             });
             async function shutdownSystem() {
                 if (!confirm("確定要完全結束並關閉 T91 系統嗎？")) return;
